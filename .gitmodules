@@ -1,0 +1,3 @@
+[submodule "GameEngineAdapter"]
+	path = GameEngineAdapter
+	url = https://github.com/JohnLudlow/GameEngineAdapter

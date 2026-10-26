@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 1: Architecture Overview — GameEngineAdapter</title>
+    <style>
+        :root {
+            --text: #1f2937;
+            --bg: #f9fafb;
+            --accent: #3b82f6;
+            --accent-light: #eff6ff;
+            --border: #e5e7eb;
+            --code-bg: #f3f4f6;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            color: var(--text);
+            background: var(--bg);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: #000;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #6b7280;
+            margin-bottom: 2rem;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 0.5rem;
+        }
+
+        h3 {
+            font-size: 1.2rem;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            color: var(--accent);
+        }
+
+        p, li {
+            margin-bottom: 1rem;
+        }
+
+        ul, ol {
+            margin-left: 1.5rem;
+        }
+
+        li {
+            margin-bottom: 0.75rem;
+        }
+
+        .box {
+            background: var(--accent-light);
+            border-left: 4px solid var(--accent);
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 0.25rem;
+        }
+
+        .box.note {
+            background: #fef3c7;
+            border-left-color: #f59e0b;
+        }
+
+        .box.warning {
+            background: #fee2e2;
+            border-left-color: #ef4444;
+        }
+
+        code {
+            background: var(--code-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.95rem;
+        }
+
+        pre {
+            background: var(--code-bg);
+            padding: 1rem;
+            border-radius: 0.25rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+            border: 1px solid var(--border);
+            font-family: 'Courier New', 'Monaco', 'Menlo', 'Lucida Console', monospace !important;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+            font-family: inherit !important;
+        }
+
+        .diagram {
+            background: white;
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin: 1.5rem 0;
+            text-align: center;
+        }
+
+        .diagram pre {
+            font-family: 'Courier New', 'Monaco', 'Menlo', 'Lucida Console', monospace !important;
+            font-size: 0.85rem !important;
+            line-height: 1.2 !important;
+            letter-spacing: -0.5px;
+            text-align: left;
+            display: inline-block;
+        }
+
+        .frame-cycle {
+            background: white;
+            border: 1px solid var(--border);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .frame-cycle .step {
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            background: #f0f9ff;
+            border-left: 3px solid var(--accent);
+        }
+
+        .frame-cycle .step code {
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        th, td {
+            border: 1px solid var(--border);
+            padding: 0.75rem;
+            text-align: left;
+        }
+
+        th {
+            background: var(--accent-light);
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        tr:nth-child(even) {
+            background: #f9fafb;
+        }
+
+        .link-external {
+            color: var(--accent);
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .footer {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+            color: #6b7280;
+            font-size: 0.95rem;
+        }
+
+        .key-takeaway {
+            background: #dbeafe;
+            border-left: 4px solid #0ea5e9;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 0.25rem;
+        }
+
+        .key-takeaway strong {
+            color: #0284c7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Lesson 1: Architecture Overview</h1>
+        <p class="subtitle">Understanding the adapter pattern, provider model, and how GameEngineAdapter decouples game logic from engines</p>
+
+        <div class="box">
+            <strong>📖 Lesson Goal:</strong> Understand the architectural patterns that make GameEngineAdapter work. By the end, you'll be able to explain why it's organized the way it is, and what each layer does.
+        </div>
+
+        <!-- SECTION 1: The Problem -->
+        <h2>The Problem: Coupling Game Logic to Engine-Specific Code</h2>
+
+        <p>Imagine you're writing a 4X game in <strong>MonoGame</strong>. You write:</p>
+
+        <pre><code>// Game logic tied to MonoGame
+class GameSimulation
+{
+    private SpriteBatch _spriteBatch;  // MonoGame-specific
+    private Keyboard _keyboard;         // MonoGame-specific
+
+    public void Update()
+    {
+        // Your game logic is now hardcoded to MonoGame APIs
+        _spriteBatch.Draw(...);
+    }
+}</code></pre>
+
+        <p>Now you want to run the same game on <strong>Stride</strong>, or in a <strong>Terminal UI</strong>, or in a <strong>Headless test environment</strong>. Problem: your entire game logic is entangled with MonoGame. You have to rewrite everything.</p>
+
+        <p><strong>GameEngineAdapter solves this</strong> by inverting the dependency: your game logic depends on abstract contracts (interfaces), not concrete engine code. Each engine implements the contracts. Game logic stays portable.</p>
+
+        <!-- SECTION 2: The Solution -->
+        <h2>The Solution: The Adapter Pattern</h2>
+
+        <p>GameEngineAdapter uses the <strong>Adapter Pattern</strong> (also called <strong>Hexagonal Architecture</strong> or <strong>Ports and Adapters</strong>):</p>
+
+        <div class="diagram">
+            <pre>
+    ┌──────────────────────────────────┐
+    │        GAME LOGIC                │
+    │      (Your 4X Game)              │
+    └──────────────┬───────────────────┘
+                   │
+            ┌──────▼─────────┐
+            │ IEngineAdapter │
+            └──────┬─────────┘
+                   │
+        ┌──────────┼──────────┐
+        │          │          │
+    ┌───▼──┐  ┌────▼────┐  ┌──▼────────┐
+    │Render│  │ Input   │  │  Audio    │
+    │      │  │         │  │           │
+    │ Prov │  │ Prov    │  │ Player    │
+    └──────┘  └─────────┘  └───────────┘
+        │          │            │
+    ┌───┴──────────┴────────────┴──┐
+    │     (Multiple impls; each    │
+    │     adapter picks which      │
+    │     providers to support)    │
+    │                              │
+    │   • MonoGame                 │
+    │   • Stride                   │
+    │   • TUI                      │
+    │   • Headless                 │
+    └──────────────────────────────┘</pre>
+        </div>
+
+        <div class="key-takeaway">
+            <strong>Key insight:</strong> Game logic sits at the center, depending only on abstract <code>IEngineAdapter</code> and its providers. Each engine (MonoGame, TUI, Headless) implements these interfaces. Your game logic never changes.
+        </div>
+
+        <!-- SECTION 3: The Three Layers -->
+        <h2>The Three Architectural Layers</h2>
+
+        <table>
+            <tr>
+                <th>Layer</th>
+                <th>Contains</th>
+                <th>Location</th>
+                <th>Dependencies</th>
+            </tr>
+            <tr>
+                <td><strong>Core Contracts</strong></td>
+                <td>Interfaces (<code>IEngineAdapter</code>, <code>IRenderProvider</code>, etc.) and DTOs (<code>SpriteDrawDto</code>, etc.)</td>
+                <td><code>GameEngineAdapter.Core/</code></td>
+                <td>None (no external deps)</td>
+            </tr>
+            <tr>
+                <td><strong>Game Logic</strong></td>
+                <td>Your 4X game simulation</td>
+                <td><em>Your project</em></td>
+                <td>Depends on <code>GameEngineAdapter.Core</code></td>
+            </tr>
+            <tr>
+                <td><strong>Adapters</strong></td>
+                <td>Engine-specific implementations (MonoGame, TUI, Headless, etc.)</td>
+                <td><code>GameEngineAdapter.Headless/</code>, <em>future adapters</em></td>
+                <td>Depends on <code>GameEngineAdapter.Core</code> and engine libraries</td>
+            </tr>
+        </table>
+
+        <p><strong>The flow is always one direction:</strong> Game Logic → Contracts ← Adapters. Game logic never knows about adapters. Adapters depend on contracts.</p>
+
+        <!-- SECTION 4: IEngineAdapter -->
+        <h2>The Central Contract: <code>IEngineAdapter</code></h2>
+
+        <p>Every engine adapter implements <code>IEngineAdapter</code>. It looks roughly like this:</p>
+
+        <pre><code>public interface IEngineAdapter : IDisposable
+{
+    // Describe what this adapter can do
+    EngineCapabilities Capabilities { get; }
+
+    // Lifecycle
+    Task InitializeAsync(EngineConfig config, CancellationToken ct = default);
+    Task ShutdownAsync(CancellationToken ct = default);
+
+    // Get providers for rendering, input, audio, assets, UI
+    IRenderProvider RenderProvider { get; }
+    IInputProvider InputProvider { get; }
+    IAudioPlayer AudioPlayer { get; }
+    IAssetProvider AssetProvider { get; }
+    IUserInterfaceProvider UserInterfaceProvider { get; }
+
+    // Frame lifecycle
+    FrameScope BeginFrame();
+    void EndFrame();
+}</code></pre>
+
+        <p><strong>Each adapter must provide:</strong></p>
+        <ul>
+            <li><strong>Capabilities</strong> — What features does this engine support? (2D, 3D, audio, text-only?)</li>
+            <li><strong>Lifecycle methods</strong> — Initialize, shutdown, frame begin/end</li>
+            <li><strong>Providers</strong> — Objects your game uses to render, receive input, play audio, manage assets, show UI</li>
+        </ul>
+
+        <!-- SECTION 5: The Provider Model -->
+        <h2>The Provider Model: Separation of Concerns</h2>
+
+        <p>Rather than cramming everything into one mega-interface, GameEngineAdapter splits functionality into focused <strong>providers</strong>:</p>
+
+        <table>
+            <tr>
+                <th>Provider</th>
+                <th>What It Does</th>
+                <th>Example Usage</th>
+            </tr>
+            <tr>
+                <td><code>IRenderProvider</code></td>
+                <td>Submit draw commands (sprites, meshes, text)</td>
+                <td><code>renderProvider.DrawSprite(sprite)</code></td>
+            </tr>
+            <tr>
+                <td><code>IInputProvider</code></td>
+                <td>Receive keyboard, mouse, gamepad input</td>
+                <td><code>inputProvider.GetKeyboardState()</code></td>
+            </tr>
+            <tr>
+                <td><code>IAudioPlayer</code></td>
+                <td>Play, stop, and control audio</td>
+                <td><code>audioPlayer.PlayAsync(sound)</code></td>
+            </tr>
+            <tr>
+                <td><code>IAssetProvider</code></td>
+                <td>Load, cache, and manage game assets</td>
+                <td><code>assetProvider.GetAssetAsync(id)</code></td>
+            </tr>
+            <tr>
+                <td><code>IUserInterfaceProvider</code></td>
+                <td>Render UI elements (buttons, panels, text)</td>
+                <td><code>uiProvider.SubmitElement(panel)</code></td>
+            </tr>
+        </table>
+
+        <p><strong>Why separate providers?</strong> Because a TUI adapter might not support <code>IRenderProvider</code> (no sprite rendering). But it should still support <code>IUserInterfaceProvider</code> (text panels and buttons). By splitting concerns, adapters can support what makes sense for their engine.</p>
+
+        <!-- SECTION 6: Capability Negotiation -->
+        <h2>Capability Negotiation: Knowing What the Engine Can Do</h2>
+
+        <p>Not all engines are equal. A Headless adapter can't render graphics. A TUI can't play audio. How does your game know?</p>
+
+        <p>Every adapter reports its <code>EngineCapabilities</code>:</p>
+
+        <pre><code>public class EngineCapabilities
+{
+    public bool Supports2D { get; set; }      // Sprites, 2D transforms
+    public bool Supports3D { get; set; }      // Meshes, 3D transforms
+    public bool SupportsAudio { get; set; }   // Audio playback
+    public bool SupportsText { get; set; }    // Text rendering
+    public string ContractVersion { get; set; }
+}</code></pre>
+
+        <p><strong>Your game logic checks capabilities</strong> and adapts:</p>
+
+        <pre><code>void Render(IEngineAdapter adapter)
+{
+    if (adapter.Capabilities.Supports2D)
+    {
+        adapter.RenderProvider.DrawSprite(...);
+    }
+    else if (adapter.Capabilities.SupportsText)
+    {
+        adapter.UserInterfaceProvider.SubmitTextPanel(...);
+    }
+}</code></pre>
+
+        <p>This way, the same game logic can adapt to different engines without conditional compilation or runtime errors.</p>
+
+        <!-- SECTION 7: The Frame Cycle -->
+        <h2>A Concrete Example: The Frame Cycle (How HeadlessAdapter Works)</h2>
+
+        <p>Let's trace a single frame through the HeadlessAdapter to see how these pieces fit together:</p>
+
+        <div class="frame-cycle">
+            <div class="step">
+                <strong>1. Game calls <code>BeginFrame()</code></strong>
+                <div style="margin-top: 0.5rem; font-size: 0.9rem;">
+                    Returns a <code>FrameScope</code> — a disposable that marks the frame boundary.
+                </div>
+            </div>
+
+            <div class="step">
+                <strong>2. Game processes input</strong>
+                <div style="margin-top: 0.5rem; font-size: 0.9rem;">
+                    <code>inputProvider.GetKeyboardState()</code> returns queued keyboard events. In Headless, this is pre-recorded test data.
+                </div>
+            </div>
+
+            <div class="step">
+                <strong>3. Game updates simulation</strong>
+                <div style="margin-top: 0.5rem; font-size: 0.9rem;">
+                    Game logic runs. Calls <code>audioPlayer.PlayAsync(...)</code>, <code>assetProvider.GetAssetAsync(...)</code>, etc.
+                </div>
+            </div>
+
+            <div class="step">
+                <strong>4. Game submits render commands</strong>
+                <div style="margin-top: 0.5rem; font-size: 0.9rem;">
+                    <code>renderProvider.DrawSprite(dto)</code>, <code>renderProvider.DrawText(dto)</code>, etc.
+                    In Headless, these are recorded (not actually rendered).
+                </div>
+            </div>
+
+            <div class="step">
+                <strong>5. Game disposes <code>FrameScope</code></strong>
+                <div style="margin-top: 0.5rem; font-size: 0.9rem;">
+                    Disposing triggers <code>EndFrame()</code>. Adapter finishes the frame (swaps buffers, clears state, etc.).
+                </div>
+            </div>
+
+            <div class="step" style="background: #dbeafe; border-left-color: #0ea5e9;">
+                <strong>✅ Frame complete.</strong> Recorded render commands and input events are available for test assertions.
+            </div>
+        </div>
+
+        <div class="box note">
+            <strong>🎯 Why this matters for TUI:</strong> The frame cycle is the same regardless of engine. A TUI adapter would follow the exact same cycle — it just renders to the terminal instead of a graphics buffer, and reads input from the terminal instead of a gaming console.
+        </div>
+
+        <!-- SECTION 8: Why TUI Failed Before -->
+        <h2>Why the Previous TUI Attempt Failed (Architecture-Level Analysis)</h2>
+
+        <p>The previous TUI implementation had several classic failures:</p>
+
+        <ul>
+            <li><strong>Constant flickering:</strong> Likely tried to re-render <code>IRenderProvider.DrawSprite()</code> commands to ASCII art every frame. Terminal rendering is expensive; flickering indicates no dirty-region tracking or double-buffering.</li>
+
+            <li><strong>Non-functional controls:</strong> UI elements (checkboxes) weren't responding. Probably because the TUI tried to implement controls within the adapter, rather than delegating to <code>IUserInterfaceProvider</code>.</li>
+
+            <li><strong>No mouse support:</strong> Mouse events require event-based input architecture. The TUI may have tried polling or buffering incorrectly.</li>
+
+            <li><strong>Unpredictable tab focus:</strong> Tab/focus management is not a terminal-native feature. Had to be manually implemented and likely was done incorrectly.</li>
+        </ul>
+
+        <div class="box warning">
+            <strong>⚠️ The core issue:</strong> TUI is fundamentally different from graphical rendering. A TUI can't efficiently map <code>IRenderProvider</code> calls (sprites, meshes, transforms) to terminal output. A better design would be:
+            <ul style="margin-top: 0.5rem; margin-left: 1rem;">
+                <li>TUI reports <code>Supports2D = false, Supports3D = false</code> (not a graphics engine)</li>
+                <li>All TUI output goes through <code>IUserInterfaceProvider</code> (text panels, buttons, grids)</li>
+                <li>Game logic checks capabilities and renders differently for TUI</li>
+            </ul>
+        </div>
+
+        <!-- SECTION 9: What You'll Learn Next -->
+        <h2>Next Steps: Lesson 2 & 3</h2>
+
+        <p><strong>Lesson 2: Contracts Deep Dive</strong> — We'll examine each interface and DTO in detail. You'll read Phase 1 code and understand the API shape.</p>
+
+        <p><strong>Lesson 3: TUI Requirements Design</strong> — We'll clarify what a TUI implementation should actually do, based on the architectural patterns we've just learned. We'll design the contracts before writing code.</p>
+
+        <!-- SECTION 10: Verify Your Understanding -->
+        <h2>✅ Check Your Understanding</h2>
+
+        <p>Before moving on, ask yourself:</p>
+
+        <ol>
+            <li><strong>Can you explain why game logic should not directly use MonoGame APIs?</strong> (Answer: Couples logic to engine; breaks portability.)</li>
+
+            <li><strong>What does <code>IEngineAdapter</code> represent?</strong> (Answer: The contract that every engine must implement.)</li>
+
+            <li><strong>Why are providers separate?</strong> (Answer: Not all engines support all features; separation allows engines to expose only what they can do.)</li>
+
+            <li><strong>What does <code>Capabilities</code> tell your game?</strong> (Answer: Whether the engine supports 2D, 3D, audio, text, etc.; game adapts accordingly.)</li>
+
+            <li><strong>How does a frame cycle work?</strong> (Answer: <code>BeginFrame() → Input → Update → Render → EndFrame()</code>; same for all engines.)</li>
+
+            <li><strong>Why did the previous TUI fail?</strong> (Answer: Tried to map sprite rendering to terminal output; should've used <code>IUserInterfaceProvider</code> instead.)</li>
+        </ol>
+
+        <!-- SECTION 11: Resources -->
+        <h2>📚 Resources</h2>
+
+        <ul>
+            <li><strong>Read next:</strong> <a href="../../GameEngineAdapter/docs/plans/phase-1-interface-development.md" class="link-external">Phase 1 Plan</a> (sections 1–3, overview and terms)</li>
+
+            <li><strong>Explore code:</strong> Open <code>GameEngineAdapter.Core/IEngineAdapter.cs</code> in your IDE. Read the XML comments.</li>
+
+            <li><strong>Reference:</strong> <code>GameEngineAdapter.Headless/HeadlessAdapter.cs</code> — the working implementation you'll trace in Lesson 2.</li>
+
+            <li><strong>Background reading (optional):</strong> <a href="https://en.wikipedia.org/wiki/Adapter_pattern" class="link-external">Adapter Pattern on Wikipedia</a></li>
+        </ul>
+
+        <!-- FOOTER -->
+        <div class="footer">
+            <p><strong>Questions or stuck?</strong> Reach out to your teaching agent. This lesson is designed to be a foundation, not complete. We'll clarify anything unclear in Lesson 2.</p>
+
+            <p><strong>Time estimate:</strong> 20–30 minutes for reading and understanding; another 15 minutes to explore code in your IDE.</p>
+
+            <p><strong>Next lesson:</strong> <a href="./0002-contracts-deep-dive.html" class="link-external">Lesson 2: Contracts Deep Dive</a></p>
+        </div>
+    </div>
+</body>
+</html>
