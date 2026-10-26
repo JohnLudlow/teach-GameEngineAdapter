@@ -86,6 +86,24 @@
             border-left-color: #ef4444;
         }
 
+        .retrieval-check {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            margin: 0.75rem 0;
+            padding: 0.9rem 1rem;
+        }
+
+        .retrieval-check summary {
+            color: var(--accent);
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .retrieval-check p {
+            margin: 0.75rem 0 0;
+        }
+
         code {
             background: var(--code-bg);
             padding: 0.2rem 0.4rem;
@@ -253,9 +271,9 @@ class GameSimulation
     └──────┘  └─────────┘  └───────────┘
         │          │            │
     ┌───┴──────────┴────────────┴──┐
-    │     (Multiple impls; each    │
-    │     adapter picks which      │
-    │     providers to support)    │
+    │     (Each adapter provides   │
+    │     the providers and        │
+    │     advertises capabilities) │
     │                              │
     │   • MonoGame                 │
     │   • Stride                   │
@@ -265,7 +283,7 @@ class GameSimulation
         </div>
 
         <div class="key-takeaway">
-            <strong>Key insight:</strong> Game logic sits at the center, depending only on abstract <code>IEngineAdapter</code> and its providers. Each engine (MonoGame, TUI, Headless) implements these interfaces. Your game logic never changes.
+            <strong>Key insight:</strong> Game logic sits at the center, depending only on abstract <code>IEngineAdapter</code> and its providers. The current Headless adapter and future engine adapters implement those contracts. Game logic does not need to reference a concrete engine.
         </div>
 
         <!-- SECTION 3: The Three Layers -->
@@ -321,15 +339,12 @@ class GameSimulation
     IAssetProvider AssetProvider { get; }
     IUserInterfaceProvider UserInterfaceProvider { get; }
 
-    // Frame lifecycle
-    FrameScope BeginFrame();
-    void EndFrame();
 }</code></pre>
 
         <p><strong>Each adapter must provide:</strong></p>
         <ul>
-            <li><strong>Capabilities</strong> — What features does this engine support? (2D, 3D, audio, text-only?)</li>
-            <li><strong>Lifecycle methods</strong> — Initialize, shutdown, frame begin/end</li>
+            <li><strong>Capabilities</strong> — What features and resource limits does this adapter advertise?</li>
+            <li><strong>Lifecycle methods</strong> — Initialize and shut down the adapter.</li>
             <li><strong>Providers</strong> — Objects your game uses to render, receive input, play audio, manage assets, show UI</li>
         </ul>
 
@@ -347,59 +362,59 @@ class GameSimulation
             <tr>
                 <td><code>IRenderProvider</code></td>
                 <td>Submit draw commands (sprites, meshes, text)</td>
-                <td><code>renderProvider.DrawSprite(sprite)</code></td>
+                <td><code>renderProvider.SubmitSprite(in sprite)</code></td>
             </tr>
             <tr>
                 <td><code>IInputProvider</code></td>
-                <td>Receive keyboard, mouse, gamepad input</td>
-                <td><code>inputProvider.GetKeyboardState()</code></td>
+                <td>Poll key state, mouse-button state, and mouse position</td>
+                <td><code>inputProvider.IsKeyDown("Space")</code></td>
             </tr>
             <tr>
                 <td><code>IAudioPlayer</code></td>
                 <td>Play, stop, and control audio</td>
-                <td><code>audioPlayer.PlayAsync(sound)</code></td>
+                <td><code>audioPlayer.StartPlayback(soundId)</code></td>
             </tr>
             <tr>
                 <td><code>IAssetProvider</code></td>
-                <td>Load, cache, and manage game assets</td>
-                <td><code>assetProvider.GetAssetAsync(id)</code></td>
+                <td>Cache, query, and unload assets through an asset loader</td>
+                <td><code>assetProvider.GetAsset(assetId)</code></td>
             </tr>
             <tr>
                 <td><code>IUserInterfaceProvider</code></td>
-                <td>Render UI elements (buttons, panels, text)</td>
-                <td><code>uiProvider.SubmitElement(panel)</code></td>
+                <td>Reserved for adapter-owned UI operations; it currently has no members</td>
+                <td>No current operation</td>
             </tr>
         </table>
 
-        <p><strong>Why separate providers?</strong> Because a TUI adapter might not support <code>IRenderProvider</code> (no sprite rendering). But it should still support <code>IUserInterfaceProvider</code> (text panels and buttons). By splitting concerns, adapters can support what makes sense for their engine.</p>
+        <p><strong>Why separate providers?</strong> Each provider owns a focused responsibility. The adapter exposes capability metadata so consumers can adapt when an optional feature is unavailable. The empty UI provider does not yet define portable controls, panels, or buttons.</p>
 
         <!-- SECTION 6: Capability Negotiation -->
         <h2>Capability Negotiation: Knowing What the Engine Can Do</h2>
 
-        <p>Not all engines are equal. A Headless adapter can't render graphics. A TUI can't play audio. How does your game know?</p>
+        <p>Not all adapters support the same rendering, audio, and rich-UI features. How does a consumer adapt?</p>
 
         <p>Every adapter reports its <code>EngineCapabilities</code>:</p>
 
-        <pre><code>public class EngineCapabilities
-{
-    public bool Supports2D { get; set; }      // Sprites, 2D transforms
-    public bool Supports3D { get; set; }      // Meshes, 3D transforms
-    public bool SupportsAudio { get; set; }   // Audio playback
-    public bool SupportsText { get; set; }    // Text rendering
-    public string ContractVersion { get; set; }
-}</code></pre>
+        <pre><code>public readonly record struct EngineCapabilities(
+    bool Supports2D,
+    bool Supports3D,
+    bool SupportsShaders,
+    bool SupportsAudio,
+    bool SupportsRichUI,
+    string ContractVersion,
+    IReadOnlyList&lt;string&gt; SupportedTextureFormats,
+    int MaxTextureSize,
+    int MaxAudioChannels);</code></pre>
 
         <p><strong>Your game logic checks capabilities</strong> and adapts:</p>
 
-        <pre><code>void Render(IEngineAdapter adapter)
+        <pre><code>void SubmitSpriteIfSupported(
+    IEngineAdapter adapter,
+    in SpriteDrawDto sprite)
 {
     if (adapter.Capabilities.Supports2D)
     {
-        adapter.RenderProvider.DrawSprite(...);
-    }
-    else if (adapter.Capabilities.SupportsText)
-    {
-        adapter.UserInterfaceProvider.SubmitTextPanel(...);
+        adapter.RenderProvider.SubmitSprite(in sprite);
     }
 }</code></pre>
 
@@ -408,42 +423,34 @@ class GameSimulation
         <!-- SECTION 7: The Frame Cycle -->
         <h2>A Concrete Example: The Frame Cycle (How HeadlessAdapter Works)</h2>
 
-        <p>Let's trace a single frame through the HeadlessAdapter to see how these pieces fit together:</p>
+        <p>Let's trace the explicit render lifecycle used by the headless deterministic runner:</p>
 
         <div class="frame-cycle">
             <div class="step">
-                <strong>1. Game calls <code>BeginFrame()</code></strong>
+                <strong>1. Game calls <code>BeginFrame(in camera)</code></strong>
                 <div style="margin-top: 0.5rem; font-size: 0.9rem;">
                     Returns a <code>FrameScope</code> — a disposable that marks the frame boundary.
                 </div>
             </div>
 
             <div class="step">
-                <strong>2. Game processes input</strong>
+                <strong>2. Game submits draw commands</strong>
                 <div style="margin-top: 0.5rem; font-size: 0.9rem;">
-                    <code>inputProvider.GetKeyboardState()</code> returns queued keyboard events. In Headless, this is pre-recorded test data.
+                    Call <code>SubmitSprite</code>, <code>SubmitText</code>, and <code>SubmitMesh</code> as needed.
                 </div>
             </div>
 
             <div class="step">
-                <strong>3. Game updates simulation</strong>
+                <strong>3. Game calls <code>EndFrame()</code></strong>
                 <div style="margin-top: 0.5rem; font-size: 0.9rem;">
-                    Game logic runs. Calls <code>audioPlayer.PlayAsync(...)</code>, <code>assetProvider.GetAssetAsync(...)</code>, etc.
+                    This explicitly ends the active render frame.
                 </div>
             </div>
 
             <div class="step">
-                <strong>4. Game submits render commands</strong>
+                <strong>4. Game calls <code>Present()</code></strong>
                 <div style="margin-top: 0.5rem; font-size: 0.9rem;">
-                    <code>renderProvider.DrawSprite(dto)</code>, <code>renderProvider.DrawText(dto)</code>, etc.
-                    In Headless, these are recorded (not actually rendered).
-                </div>
-            </div>
-
-            <div class="step">
-                <strong>5. Game disposes <code>FrameScope</code></strong>
-                <div style="margin-top: 0.5rem; font-size: 0.9rem;">
-                    Disposing triggers <code>EndFrame()</code>. Adapter finishes the frame (swaps buffers, clears state, etc.).
+                    This explicitly presents the completed frame. Disposing <code>FrameScope</code> is a no-op and does not replace either call.
                 </div>
             </div>
 
@@ -453,30 +460,30 @@ class GameSimulation
         </div>
 
         <div class="box note">
-            <strong>🎯 Why this matters for TUI:</strong> The frame cycle is the same regardless of engine. A TUI adapter would follow the exact same cycle — it just renders to the terminal instead of a graphics buffer, and reads input from the terminal instead of a gaming console.
+            <strong>🎯 Why this matters for TUI:</strong> A future TUI adapter must honor the render lifecycle if it implements this provider. That does not determine how it represents controls, focus, pointer input, or terminal output.
         </div>
 
         <!-- SECTION 8: Why TUI Failed Before -->
         <h2>Why the Previous TUI Attempt Failed (Architecture-Level Analysis)</h2>
 
-        <p>The previous TUI implementation had several classic failures:</p>
+        <p>The discarded prototype exhibited several observed failures. They are evidence for requirements, not proof of a particular root cause:</p>
 
         <ul>
-            <li><strong>Constant flickering:</strong> Likely tried to re-render <code>IRenderProvider.DrawSprite()</code> commands to ASCII art every frame. Terminal rendering is expensive; flickering indicates no dirty-region tracking or double-buffering.</li>
+            <li><strong>Constant flickering:</strong> The next scope must define visually stable output during idle and normal interaction.</li>
 
-            <li><strong>Non-functional controls:</strong> UI elements (checkboxes) weren't responding. Probably because the TUI tried to implement controls within the adapter, rather than delegating to <code>IUserInterfaceProvider</code>.</li>
+            <li><strong>Non-functional controls:</strong> Every included interactive control needs defined keyboard and click behavior with a state-change test.</li>
 
-            <li><strong>No mouse support:</strong> Mouse events require event-based input architecture. The TUI may have tried polling or buffering incorrectly.</li>
+            <li><strong>No mouse support:</strong> The first release now includes clicks; mouse movement and scrolling are explicitly out of scope.</li>
 
-            <li><strong>Unpredictable tab focus:</strong> Tab/focus management is not a terminal-native feature. Had to be manually implemented and likely was done incorrectly.</li>
+            <li><strong>Unpredictable tab focus:</strong> Tab and Shift+Tab must have deterministic transitions across enabled controls.</li>
         </ul>
 
         <div class="box warning">
-            <strong>⚠️ The core issue:</strong> TUI is fundamentally different from graphical rendering. A TUI can't efficiently map <code>IRenderProvider</code> calls (sprites, meshes, transforms) to terminal output. A better design would be:
+            <strong>⚠️ The current boundary:</strong> <code>IUserInterfaceProvider</code> has no members. It therefore cannot currently express portable UI controls, focus, pointer events, layout, invalidation, or resizing. The next design must define those observable requirements before adding shared contract members.
             <ul style="margin-top: 0.5rem; margin-left: 1rem;">
-                <li>TUI reports <code>Supports2D = false, Supports3D = false</code> (not a graphics engine)</li>
-                <li>All TUI output goes through <code>IUserInterfaceProvider</code> (text panels, buttons, grids)</li>
-                <li>Game logic checks capabilities and renders differently for TUI</li>
+                <li>Do not assume that graphical draw commands should become terminal controls.</li>
+                <li>Do not assume a TUI capability profile until the supported behavior is agreed.</li>
+                <li>Use capability metadata only for features defined by the current contract.</li>
             </ul>
         </div>
 
@@ -490,27 +497,43 @@ class GameSimulation
         <!-- SECTION 10: Verify Your Understanding -->
         <h2>✅ Check Your Understanding</h2>
 
-        <p>Before moving on, ask yourself:</p>
+        <p>Answer each question from memory, then expand it to check your answer.</p>
 
-        <ol>
-            <li><strong>Can you explain why game logic should not directly use MonoGame APIs?</strong> (Answer: Couples logic to engine; breaks portability.)</li>
+        <details class="retrieval-check">
+            <summary>Why should game logic avoid directly using MonoGame APIs?</summary>
+            <p>Direct use couples the game logic to MonoGame and prevents the same logic from running through another adapter without rewriting those calls.</p>
+        </details>
 
-            <li><strong>What does <code>IEngineAdapter</code> represent?</strong> (Answer: The contract that every engine must implement.)</li>
+        <details class="retrieval-check">
+            <summary>What does <code>IEngineAdapter</code> represent?</summary>
+            <p>It is the root adapter contract: it provides lifecycle methods, capabilities, and access to the focused engine providers.</p>
+        </details>
 
-            <li><strong>Why are providers separate?</strong> (Answer: Not all engines support all features; separation allows engines to expose only what they can do.)</li>
+        <details class="retrieval-check">
+            <summary>Why are providers separate?</summary>
+            <p>Each provider owns one focused responsibility, such as rendering, input polling, asset caching, or audio playback.</p>
+        </details>
 
-            <li><strong>What does <code>Capabilities</code> tell your game?</strong> (Answer: Whether the engine supports 2D, 3D, audio, text, etc.; game adapts accordingly.)</li>
+        <details class="retrieval-check">
+            <summary>What does <code>Capabilities</code> tell game logic?</summary>
+            <p>It advertises supported rendering, audio, and rich-UI features, plus contract and resource limits that the consumer can use to adapt its behavior.</p>
+        </details>
 
-            <li><strong>How does a frame cycle work?</strong> (Answer: <code>BeginFrame() → Input → Update → Render → EndFrame()</code>; same for all engines.)</li>
+        <details class="retrieval-check">
+            <summary>What is the current render-frame sequence?</summary>
+            <p><code>BeginFrame</code>, submit draw commands, <code>EndFrame</code>, then <code>Present</code>. The render provider owns this sequence.</p>
+        </details>
 
-            <li><strong>Why did the previous TUI fail?</strong> (Answer: Tried to map sprite rendering to terminal output; should've used <code>IUserInterfaceProvider</code> instead.)</li>
-        </ol>
+        <details class="retrieval-check">
+            <summary>What did the discarded TUI attempt reveal?</summary>
+            <p>The existing contracts do not define portable UI controls, focus, pointer events, layout, invalidation, or resizing. Those requirements must be agreed before implementation.</p>
+        </details>
 
         <!-- SECTION 11: Resources -->
         <h2>📚 Resources</h2>
 
         <ul>
-            <li><strong>Read next:</strong> <a href="../../GameEngineAdapter/docs/plans/phase-1-interface-development.md" class="link-external">Phase 1 Plan</a> (sections 1–3, overview and terms)</li>
+            <li><strong>Read next:</strong> <a href="../GameEngineAdapter/docs/plans/phase-1-interface-development.md" class="link-external">Phase 1 Plan</a> (sections 1–3, overview and terms)</li>
 
             <li><strong>Explore code:</strong> Open <code>GameEngineAdapter.Core/IEngineAdapter.cs</code> in your IDE. Read the XML comments.</li>
 
@@ -525,7 +548,7 @@ class GameSimulation
 
             <p><strong>Time estimate:</strong> 20–30 minutes for reading and understanding; another 15 minutes to explore code in your IDE.</p>
 
-            <p><strong>Next lesson:</strong> <a href="./0002-contracts-deep-dive.html" class="link-external">Lesson 2: Contracts Deep Dive</a></p>
+            <p><strong>Next lesson:</strong> <a href="0002-contract-boundaries-and-frame-lifecycle.html" class="link-external">Lesson 2: Contract Boundaries and Frame Lifecycle</a></p>
         </div>
     </div>
 </body>

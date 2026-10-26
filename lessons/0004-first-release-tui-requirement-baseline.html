@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 4: First-Release TUI Requirement Baseline</title>
+    <link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+    <main>
+        <h1>Lesson 4: First-Release TUI Requirement Baseline</h1>
+        <p class="subtitle">Separate the requirements already agreed from interaction rules that still need a decision.</p>
+
+        <div class="callout">
+            <strong>Mission connection:</strong> You now have a bounded first release instead of a terminal UI with unlimited features. That turns the failed prototype’s symptoms into a design target while keeping implementation blocked on the remaining contract decisions.
+        </div>
+
+        <h2>Agreed first-release scope</h2>
+        <p>The first usable TUI must provide labels, checkboxes, lists, panels, buttons, and tab controls. It must support mouse clicks, but mouse move and scroll are outside this first release.</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Requirement area</th>
+                    <th scope="col">Agreed baseline</th>
+                    <th scope="col">Acceptance evidence</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Control scope</td>
+                    <td>Label, checkbox, list, panel, button, and tab control</td>
+                    <td>Each control appears in an end-to-end UI scenario</td>
+                </tr>
+                <tr>
+                    <td>Mouse</td>
+                    <td>Click support is included; move and scroll are excluded</td>
+                    <td>Click behavior is covered for every interactive included control</td>
+                </tr>
+                <tr>
+                    <td>Focus</td>
+                    <td>Tab and Shift+Tab cycle deterministically through enabled controls</td>
+                    <td>A fixed control tree always produces the same focus-transition sequence</td>
+                </tr>
+                <tr>
+                    <td>Redraw</td>
+                    <td>Full redraws are allowed when output remains visually stable</td>
+                    <td>Idle and normal-interaction scenarios show no visible redraw flicker</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Scope is not interaction semantics</h2>
+        <p>Knowing that a button and a tab control exist does not yet define what they do. A requirement needs the input, the state transition, and the observable output. The same applies to a mouse click: it tells us the input channel, not the hit-testing, focus, or activation rule.</p>
+
+        <div class="sequence" aria-label="Interaction requirement template">
+            <div class="step"><strong>Input:</strong> name the key or click that triggers the behavior.</div>
+            <div class="step"><strong>Target:</strong> identify how the focused or clicked control is selected.</div>
+            <div class="step"><strong>Transition:</strong> state the control or focus change.</div>
+            <div class="step"><strong>Output:</strong> state what the next visible UI must show.</div>
+            <div class="step"><strong>Test:</strong> define the deterministic assertion for the sequence.</div>
+        </div>
+
+        <p>For example, “a button supports click” is scope. “Clicking an enabled button invokes its assigned action once and updates the next rendered state” is an observable behavior. Whether that same click also moves focus remains a separate decision.</p>
+
+        <h2>Decisions still required before a shared contract</h2>
+        <p>These are not implementation details. They determine the public behavior that a future UI contract must represent.</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Decision</th>
+                    <th scope="col">Why it matters</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Focusable controls</td>
+                    <td>Defines the exact traversal set for Tab and Shift+Tab.</td>
+                </tr>
+                <tr>
+                    <td>Keyboard and click mappings</td>
+                    <td>Defines how each interactive control changes state or invokes an action.</td>
+                </tr>
+                <tr>
+                    <td>Pointer-to-focus rule</td>
+                    <td>Defines whether a click moves focus before or after it activates a control.</td>
+                </tr>
+                <tr>
+                    <td>Disabled and removed controls</td>
+                    <td>Defines how focus recovery remains deterministic when the UI changes.</td>
+                </tr>
+                <tr>
+                    <td>Resize outcome</td>
+                    <td>Defines what must be redrawn and what happens when content no longer fits.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="callout warning">
+            <strong>Implementation gate:</strong> Do not select a terminal UI library or add members to <code>IUserInterfaceProvider</code> until these behaviors are agreed. The current provider remains empty, so it cannot make any of them portable.
+        </div>
+
+        <h2>Retrieval practice</h2>
+        <p>Answer each question from memory, then expand it to check your answer.</p>
+
+        <details class="retrieval-check">
+            <summary>Which mouse behavior is included in the first release?</summary>
+            <p>Mouse clicks are included. Mouse move and scroll are explicitly outside the first-release scope.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>What must Tab and Shift+Tab do?</summary>
+            <p>They must cycle deterministically through enabled controls. The exact focusable set still needs to be defined.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>Does permitting full redraws define the redraw implementation?</summary>
+            <p>No. It defines an observable constraint: redraws must remain visually stable during idle and normal interaction.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>Why is “supports click” incomplete for a button?</summary>
+            <p>It does not specify the target-selection rule, action or state transition, visible output, or deterministic test.</p>
+        </details>
+
+        <h2>Primary sources</h2>
+        <p>Review the updated <a href="../GameEngineAdapter/docs/guides/onboarding/tui-contract-considerations.md">TUI contract considerations</a> alongside <a href="../GameEngineAdapter/src/GameEngineAdapter.Core/IUserInterfaceProvider.cs">IUserInterfaceProvider.cs</a>. The first records the agreed scope; the second shows that the shared UI contract still has no members.</p>
+
+        <div class="footer">
+            <p><a href="0003-tui-requirements-before-implementation.html">Previous lesson: TUI requirements before implementation</a></p>
+            <p>Ask a follow-up question when you are ready to define the interaction rules for each included control.</p>
+        </div>
+    </main>
+</body>
+</html>

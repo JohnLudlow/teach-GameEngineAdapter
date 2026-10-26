@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 3: TUI Requirements Before Implementation</title>
+    <link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+    <main>
+        <h1>Lesson 3: TUI Requirements Before Implementation</h1>
+        <p class="subtitle">Convert the discarded prototype’s failures into decisions that can be observed and tested.</p>
+
+        <div class="callout">
+            <strong>Mission connection:</strong> The goal is not to select a terminal library or write an adapter yet. The goal is to make a smaller TUI scope whose behavior can be agreed, implemented, and tested.
+        </div>
+
+        <h2>Symptoms are evidence, not requirements</h2>
+        <p>The prototype flickered, controls were not interactive, mouse support was unclear, and Tab focus was unpredictable. Each symptom identifies a behavior that the next design must make observable. It does not by itself choose an implementation.</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Observed symptom</th>
+                    <th scope="col">Requirement to define</th>
+                    <th scope="col">Evidence for acceptance</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Visible flickering</td>
+                    <td>When output is redrawn and how resize changes it</td>
+                    <td>A repeatable idle and interaction scenario produces stable output</td>
+                </tr>
+                <tr>
+                    <td>Checkboxes did not work</td>
+                    <td>Which controls are included and how activation changes their state</td>
+                    <td>Each included control has a keyboard-driven state-change test</td>
+                </tr>
+                <tr>
+                    <td>No apparent mouse support</td>
+                    <td>Whether pointer click, move, and scroll are in scope</td>
+                    <td>Mouse behavior is tested, or the first release explicitly excludes it</td>
+                </tr>
+                <tr>
+                    <td>Unpredictable Tab focus</td>
+                    <td>Initial focus, Tab and Shift+Tab order, and disabled-control behavior</td>
+                    <td>A fixed control tree always yields the same focus transitions</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Write observable requirements</h2>
+        <p>An observable requirement states the trigger, the visible result, and any relevant boundary. It avoids implementation words such as “use double buffering” until the behavior is agreed.</p>
+
+        <div class="sequence" aria-label="Requirement writing process">
+            <div class="step"><strong>1. Name the user action:</strong> for example, pressing Tab, pressing Space, clicking, or resizing the terminal.</div>
+            <div class="step"><strong>2. State the expected outcome:</strong> for example, focus moves to the next eligible control or a checked value changes.</div>
+            <div class="step"><strong>3. State the boundary:</strong> identify what is excluded or what happens when the terminal cannot provide the capability.</div>
+            <div class="step"><strong>4. State the test:</strong> describe the input and assertion that would prove the behavior.</div>
+        </div>
+
+        <p>For example, “the controls should work” is not testable. A requirement such as “Space toggles the focused enabled checkbox, and the next render contains its new value” identifies a trigger, result, and test. It still leaves the control set and focus rules to be agreed.</p>
+
+        <h2>The current contract boundary</h2>
+        <p><code>IInputProvider</code> polls key state, mouse-button state, and mouse position. That is not a UI event model. <code>IUserInterfaceProvider</code> currently has no members, so it does not define controls, focus, layout, invalidation, or UI events across adapters.</p>
+
+        <div class="callout warning">
+            <strong>Design gate:</strong> Do not add a shared provider member because a terminal library happens to expose it. First identify a portable, observable behavior that the game needs from every relevant adapter.
+        </div>
+
+        <h2>Decisions required for the first usable TUI</h2>
+        <p>These are decisions for the next collaborative requirements session, not assumptions this lesson makes:</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Decision</th>
+                    <th scope="col">Minimum useful definition</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Control set</td>
+                    <td>The exact controls included in the first release, such as a label, checkbox, list, or panel.</td>
+                </tr>
+                <tr>
+                    <td>Keyboard behavior</td>
+                    <td>The commands each included control accepts and the order in which focus moves.</td>
+                </tr>
+                <tr>
+                    <td>Mouse scope</td>
+                    <td>Supported and tested, or explicitly excluded from the first release.</td>
+                </tr>
+                <tr>
+                    <td>Redraw and resize</td>
+                    <td>When output becomes visible and the expected result of a terminal size change.</td>
+                </tr>
+                <tr>
+                    <td>Capabilities</td>
+                    <td>What the adapter advertises and how consumers behave when a capability is unavailable.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Retrieval practice</h2>
+        <p>Answer each question from memory, then expand it to check your answer.</p>
+
+        <details class="retrieval-check">
+            <summary>Why is “the controls should work” not a useful requirement?</summary>
+            <p>It does not identify a control, trigger, expected state change, or test. An observable requirement must describe behavior that can be checked.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>What must the design decide about mouse input?</summary>
+            <p>Whether mouse behavior is supported and tested, or explicitly excluded from the first release.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>Why does the current <code>IUserInterfaceProvider</code> not solve focus or checkbox behavior?</summary>
+            <p>It has no members, so it defines no portable controls, focus model, UI events, layout, or invalidation behavior.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>When should a shared TUI contract be proposed?</summary>
+            <p>After the required behavior is observable and portable across the adapters that need it, rather than because a chosen terminal library exposes an API.</p>
+        </details>
+
+        <h2>Primary sources</h2>
+        <p>Read the project’s <a href="../GameEngineAdapter/docs/guides/onboarding/tui-contract-considerations.md">TUI contract considerations</a>, then compare <a href="../GameEngineAdapter/src/GameEngineAdapter.Core/IInputProvider.cs">IInputProvider.cs</a> with <a href="../GameEngineAdapter/src/GameEngineAdapter.Core/IUserInterfaceProvider.cs">IUserInterfaceProvider.cs</a>. They establish the current boundary, not a future implementation design.</p>
+
+        <div class="footer">
+            <p><a href="0002-contract-boundaries-and-frame-lifecycle.html">Previous lesson: Contract boundaries and frame lifecycle</a></p>
+            <p><a href="0004-first-release-tui-requirement-baseline.html">Next lesson: First-release TUI requirement baseline</a></p>
+            <p>Ask a follow-up question when you are ready to turn the first TUI scope into agreed requirements.</p>
+        </div>
+    </main>
+</body>
+</html>

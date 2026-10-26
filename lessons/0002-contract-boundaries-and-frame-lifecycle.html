@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 2: Contract Boundaries and Frame Lifecycle</title>
+    <link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+    <main>
+        <h1>Lesson 2: Contract Boundaries and Frame Lifecycle</h1>
+        <p class="subtitle">Trace the real render contract before designing a TUI adapter.</p>
+
+        <div class="callout">
+            <strong>Mission connection:</strong> The discarded TUI prototype showed why assumptions about rendering and UI behavior are dangerous. This lesson gives you one reliable habit: identify the contract that owns a behavior, then follow its explicit lifecycle.
+        </div>
+
+        <h2>One root adapter, several focused providers</h2>
+        <p><code>IEngineAdapter</code> is the composition root. It exposes adapter lifecycle methods, capabilities, and provider properties. It does not declare frame methods. The rendering contract belongs to <code>IRenderProvider</code>.</p>
+
+        <pre><code>IEngineAdapter
+├── Capabilities
+├── InitializeAsync / ShutdownAsync
+├── RenderProvider
+├── InputProvider
+├── UserInterfaceProvider
+├── AssetProvider
+└── AudioPlayer</code></pre>
+
+        <p>This separation is useful because each provider has a narrow responsibility. For example, <code>IInputProvider</code> polls key, mouse-button, and mouse-position state; <code>IAudioPlayer</code> starts, stops, and adjusts playback; and <code>IAssetProvider</code> owns caching and delegates loading to an asset loader.</p>
+
+        <h2>The render frame is an explicit sequence</h2>
+        <p>The source defines this sequence for each render frame:</p>
+
+        <div class="sequence" aria-label="Render frame sequence">
+            <div class="step"><strong>1. Begin:</strong> call <code>BeginFrame(in camera)</code>.</div>
+            <div class="step"><strong>2. Submit:</strong> call zero or more <code>SubmitSprite</code>, <code>SubmitText</code>, or <code>SubmitMesh</code> methods.</div>
+            <div class="step"><strong>3. End:</strong> call <code>EndFrame()</code>.</div>
+            <div class="step"><strong>4. Present:</strong> call <code>Present()</code> to make the frame visible.</div>
+        </div>
+
+        <div class="callout warning">
+            <strong>Important:</strong> <code>FrameScope.Dispose()</code> intentionally does nothing. A <code>using</code> declaration marks the active scope, but it does not replace <code>EndFrame()</code> or <code>Present()</code>. Omitting either method is a contract error.
+        </div>
+
+        <p>The headless deterministic runner demonstrates the intended ordering:</p>
+
+        <pre><code>using var scope = renderProvider.BeginFrame(in camera);
+onTick?.Invoke(context);
+renderProvider.EndFrame();
+renderProvider.Present();</code></pre>
+
+        <p>That runner advances simulated time only after <code>Present()</code>. This makes the ordering observable in deterministic tests.</p>
+
+        <h2>What this means for TUI work</h2>
+        <p>The current <code>IUserInterfaceProvider</code> is empty. It does not define controls, focus traversal, pointer events, layout, invalidation, or resizing. A TUI cannot gain portable checkbox interaction or deterministic Tab behavior merely by implementing the empty interface.</p>
+
+        <p>That is not a request to add a contract yet. It is an evidence-based boundary: first write observable requirements for the first TUI controls, input behavior, focus order, redraw strategy, and resize behavior. Then decide which shared contract is needed.</p>
+
+        <h2>Retrieval practice</h2>
+        <p>Answer each question from memory, then expand it to check your answer. Exact interface and method names matter when you trace behavior.</p>
+
+        <details class="retrieval-check">
+            <summary>Which interface owns <code>BeginFrame</code>, <code>EndFrame</code>, and <code>Present</code>?</summary>
+            <p><code>IRenderProvider</code>.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>Does disposing <code>FrameScope</code> present the frame?</summary>
+            <p>No. Disposal is intentionally a no-op; the caller must explicitly call <code>EndFrame</code> and <code>Present</code>.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>Which current provider has no members and therefore defines no portable UI interaction model?</summary>
+            <p><code>IUserInterfaceProvider</code>.</p>
+        </details>
+
+        <h2>Primary source</h2>
+        <p>Read the XML documentation in <a href="../GameEngineAdapter/src/GameEngineAdapter.Core/IRenderProvider.cs">IRenderProvider.cs</a> next. Then compare it with <a href="../GameEngineAdapter/src/GameEngineAdapter.Core/FrameScope.cs">FrameScope.cs</a> and <a href="../GameEngineAdapter/src/GameEngineAdapter.Headless/DeterministicEngineRunner.cs">DeterministicEngineRunner.cs</a>. Source contracts take precedence over older plans, examples, and diagrams.</p>
+
+        <div class="footer">
+            <p><a href="0001-architecture-overview.html">Previous lesson: Architecture overview</a></p>
+            <p><a href="0003-tui-requirements-before-implementation.html">Next lesson: TUI requirements before implementation</a></p>
+            <p>Ask a follow-up question whenever a contract boundary or frame step is unclear.</p>
+        </div>
+    </main>
+
+</body>
+</html>
