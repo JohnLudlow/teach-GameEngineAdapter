@@ -99,4 +99,4 @@ repository.
 
 [gh-issue-2]:https://github.com/JohnLudlow/GameEngineAdapter/issues/2
 [gh-project-8]:https://github.com/users/JohnLudlow/projects/7/views/8
-[architecture-diagram]:GameEngineAdapter/docs/plans/phase-1-interface-development-interfaces.drawio.svg
+[architecture-diagram]:./GameEngineAdapter/docs/plans/phase-1-interface-development-interfaces.drawio.svg
