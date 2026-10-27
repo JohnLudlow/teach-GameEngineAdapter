@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 7: Navigation Bounds Baseline</title>
+    <link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+    <main>
+        <h1>Lesson 7: Navigation Bounds Baseline</h1>
+        <p class="subtitle">Make list and tab navigation deterministic at the beginning and end of their collections.</p>
+
+        <div class="callout">
+            <strong>Mission connection:</strong> “Unpredictable” interaction often hides at collection boundaries. These rules turn list and tab navigation into precise behavior that a headless test can prove before a terminal library is selected.
+        </div>
+
+        <h2>Two controls, deliberately different rules</h2>
+        <p>Lists clamp their selection at the first and last item. Tab controls wrap their selected page from one end to the other. The difference is intentional and must be represented by the control’s behavior, not inferred from a generic navigation helper.</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Control</th>
+                    <th scope="col">Input at first item/page</th>
+                    <th scope="col">Input at last item/page</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>List</td>
+                    <td>Up keeps the first item selected.</td>
+                    <td>Down keeps the last item selected.</td>
+                </tr>
+                <tr>
+                    <td>Tab control</td>
+                    <td>Left selects the last tab.</td>
+                    <td>Right selects the first tab.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Clamping versus wrapping</h2>
+        <p><strong>Clamping</strong> keeps the current selection when navigation would move beyond the collection. <strong>Wrapping</strong> moves selection from one edge to the opposite edge. Both are valid behaviors; the important requirement is that each control specifies one rather than leaving its edge behavior to a library default.</p>
+
+        <pre><code>List: selected index 0 of 3
+Input: Up
+Result: selected index 0
+
+Tab control: selected index 2 of 3
+Input: Right
+Result: selected index 0</code></pre>
+
+        <h2>What these rules do not decide</h2>
+        <p>This baseline only covers navigation when an item or page is already selected. It does not define the initial selection, behavior for empty controls, or recovery when the selected item or page is removed. Those need explicit requirements before implementation.</p>
+
+        <div class="callout warning">
+            <strong>Testing rule:</strong> a test should assert the selected identifier or index after an input sequence. It should not merely assert that an arrow key was received, because that does not prove the collection-boundary behavior.
+        </div>
+
+        <h2>Worked test scenarios</h2>
+        <pre><code>Given: a list contains [A, B, C] and A is selected
+When: Up is pressed
+Then: A remains selected
+
+Given: tabs contain [Map, Economy, Research] and Research is selected
+When: Right is pressed
+Then: Map is selected</code></pre>
+
+        <h2>Retrieval practice</h2>
+        <p>Answer each question from memory, then expand it to check your answer.</p>
+
+        <details class="retrieval-check">
+            <summary>What happens when Up is pressed while the first list item is selected?</summary>
+            <p>The selection remains on the first item. List navigation clamps at both bounds.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>What happens when Right is pressed while the last tab is selected?</summary>
+            <p>The first tab becomes selected. Tab navigation wraps at both bounds.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>Why should list and tab bounds not be left to a shared helper’s default?</summary>
+            <p>They intentionally have different requirements: lists clamp and tab controls wrap. A default could silently apply the wrong behavior.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>What selection behavior remains undecided after this lesson?</summary>
+            <p>Initial selection, empty-control behavior, and recovery after a selected item or page is removed remain open.</p>
+        </details>
+
+        <h2>Primary source</h2>
+        <p>Review the updated <a href="../GameEngineAdapter/docs/guides/onboarding/tui-contract-considerations.md">TUI contract considerations</a>. It distinguishes the agreed bounds behavior from selection lifecycle decisions that remain open.</p>
+
+        <div class="footer">
+            <p><a href="0006-control-action-baseline.html">Previous lesson: Control action baseline</a></p>
+            <p>Ask a follow-up question when you are ready to define initial selection and empty-control behavior.</p>
+        </div>
+    </main>
+</body>
+</html>
