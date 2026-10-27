@@ -6,7 +6,9 @@
 
 ## Executive Summary
 
-Phase 1 is **complete and well-documented**. All core interfaces and DTOs are implemented in `GameEngineAdapter.Core`. A working `HeadlessAdapter` exists for CI testing. The codebase is **ready for Phase 2 and concrete engine adapters** (TUI, MonoGame, etc.).
+Phase 1 is **complete and well-documented**. All core interfaces and DTOs are implemented in `GameEngineAdapter.Core`. A
+working `HeadlessAdapter` exists for CI testing. The codebase is **ready for Phase 2 and concrete engine adapters**
+(TUI, MonoGame, etc.).
 
 The project structure is sound, with clear separation between contracts (Core) and implementations (Headless, future adapters).
 
@@ -91,7 +93,7 @@ The project structure is sound, with clear separation between contracts (Core) a
 
 ## Project Structure
 
-```
+```text
 GameEngineAdapter/
 ├── src/
 │   ├── GameEngineAdapter.Core/          # Contracts & DTOs (public API)
@@ -207,6 +209,10 @@ GameEngineAdapter/
 
 ## Conclusion
 
-**Phase 1 is solid.** The interfaces are well-designed, the Headless adapter works, and tests are in place. The next logical step is **building a concrete adapter** (TUI is a good candidate) to validate the design under real-world conditions.
+**Phase 1 is solid.** The interf**Phase 1 is solid.** The interfaces are well-designed, the Headless adapter works, and
+tests are in place. The next logical step is **building a concrete adapter** (TUI is a good candidate) to validate the
+design under real-world conditions. aces are well-designed, the Headless adapter works, and tests are in place. The next
+logical step is **building a concrete adapter** (TUI is a good candidate) to validate the design under real-world
+conditions.
 
 The main blocker is **clarity on TUI requirements**. Once that's resolved, implementation should proceed smoothly.

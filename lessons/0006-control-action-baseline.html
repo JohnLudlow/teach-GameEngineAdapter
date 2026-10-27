@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 6: Control Action Baseline</title>
+    <link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+    <main>
+        <h1>Lesson 6: Control Action Baseline</h1>
+        <p class="subtitle">Define how first-release controls respond without coupling those responses to game-specific actions.</p>
+
+        <div class="callout">
+            <strong>Mission connection:</strong> The first TUI can now promise concrete interaction behavior for each interactive control. This closes the “non-functional controls” gap without assuming what the game should do when an action occurs.
+        </div>
+
+        <h2>Shared rules remain in force</h2>
+        <p>These control actions build on the focus baseline: Tab and Shift+Tab traverse enabled eligible controls deterministically; a click first moves focus to an enabled interactive control; and disabled controls retain focus but cannot activate. The tables below define what activation means for each control.</p>
+
+        <h2>Checkbox</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Input</th>
+                    <th scope="col">Required transition</th>
+                    <th scope="col">Visible result</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Space or Enter while focused</td>
+                    <td>Toggle the checked state once.</td>
+                    <td>The next render shows the new checked state.</td>
+                </tr>
+                <tr>
+                    <td>Click while enabled</td>
+                    <td>Focus the checkbox, then toggle its checked state once.</td>
+                    <td>The next render shows both focus and the new checked state.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>List</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Input</th>
+                    <th scope="col">Required transition</th>
+                    <th scope="col">Visible result</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Up or Down while focused</td>
+                    <td>Change the selected item according to the list's bounds rule.</td>
+                    <td>The next render marks the new selected item.</td>
+                </tr>
+                <tr>
+                    <td>Space or Enter while focused</td>
+                    <td>Activate the selected item once.</td>
+                    <td>The consumer receives one activation event for that selected item.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="callout warning">
+            <strong>Remaining list decision:</strong> the current baseline does not define whether Up at the first item or Down at the last item wraps, clamps, or does nothing. That is a required follow-up before implementation.
+        </div>
+
+        <h2>Button</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Input</th>
+                    <th scope="col">Required transition</th>
+                    <th scope="col">Visible result</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Space or Enter while focused</td>
+                    <td>Invoke the assigned action exactly once.</td>
+                    <td>The consumer receives one invocation and controls the resulting application state.</td>
+                </tr>
+                <tr>
+                    <td>Click while enabled</td>
+                    <td>Focus the button, then invoke its assigned action exactly once.</td>
+                    <td>The consumer receives one invocation and the next render reflects its resulting state.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Tab control</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Input</th>
+                    <th scope="col">Required transition</th>
+                    <th scope="col">Visible result</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Left or Right while focused</td>
+                    <td>Change the selected page according to the tab control's bounds rule.</td>
+                    <td>The next render marks the selected tab and shows its page.</td>
+                </tr>
+                <tr>
+                    <td>Click a tab while enabled</td>
+                    <td>Focus the tab control and select the clicked page.</td>
+                    <td>The next render marks the clicked tab and shows its page.</td>
+                </tr>
+                <tr>
+                    <td>Space or Enter while focused</td>
+                    <td>Activate the selected page once.</td>
+                    <td>The consumer receives one page-activation event.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Separate shared mechanics from domain effects</h2>
+        <p>The adapter can deterministically report a checkbox toggle, selected-list-item activation, button invocation, or tab-page activation. It must not infer the game’s domain effect. For example, a button could open a menu, save configuration, or start a turn; the consumer owns that decision.</p>
+
+        <pre><code>Given: focus is on "save-button"
+When: Enter is pressed
+Then: "save-button" invokes its assigned action once
+
+Given: focus is on "faction-list" with "Romans" selected
+When: Space is pressed
+Then: the consumer receives one activation for "Romans"</code></pre>
+
+        <h2>Retrieval practice</h2>
+        <p>Answer each question from memory, then expand it to check your answer.</p>
+
+        <details class="retrieval-check">
+            <summary>Which three inputs toggle an enabled checkbox?</summary>
+            <p>Space, Enter, and click. A click first moves focus to the checkbox, then toggles it once.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>What do Space and Enter do for a focused list?</summary>
+            <p>They activate the selected item once. Up and Down change which item is selected.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>What do Left and Right do for a focused tab control?</summary>
+            <p>They change the selected page. The tab control's bounds behavior still needs a decision.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>Why should the adapter not decide what an activated button does in the game?</summary>
+            <p>The button's domain effect belongs to the consumer. The shared contract should report the portable invocation event without assuming an application-specific result.</p>
+        </details>
+
+        <h2>Primary source</h2>
+        <p>Review the updated <a href="../GameEngineAdapter/docs/guides/onboarding/tui-contract-considerations.md">TUI contract considerations</a>. It distinguishes deterministic control behavior from the game-specific effects that remain outside an adapter contract.</p>
+
+        <div class="footer">
+            <p><a href="0005-focus-and-activation-baseline.html">Previous lesson: Focus and activation baseline</a></p>
+            <p>Ask a follow-up question when you are ready to define list and tab-control bounds behavior.</p>
+        </div>
+    </main>
+</body>
+</html>

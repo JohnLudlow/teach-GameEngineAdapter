@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 5: Focus and Activation Baseline</title>
+    <link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+    <main>
+        <h1>Lesson 5: Focus and Activation Baseline</h1>
+        <p class="subtitle">Define deterministic focus transitions before deciding each control’s action semantics.</p>
+
+        <div class="callout">
+            <strong>Mission connection:</strong> The failed prototype’s unpredictable Tab behavior becomes a small set of explicit, testable focus rules. This gives a future TUI adapter a portable interaction target rather than library-specific behavior.
+        </div>
+
+        <h2>The agreed focus model</h2>
+        <p>Checkboxes, lists, buttons, tab controls, and panels or groups are eligible for focus traversal. Tab and Shift+Tab must traverse enabled eligible controls deterministically.</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Situation</th>
+                    <th scope="col">Required behavior</th>
+                    <th scope="col">Reason it is observable</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Tab or Shift+Tab</td>
+                    <td>Move through enabled eligible controls in a deterministic order.</td>
+                    <td>The same control tree and input sequence must produce the same focused control.</td>
+                </tr>
+                <tr>
+                    <td>Panel or group encountered</td>
+                    <td>Enter the container by moving focus to its first enabled eligible child.</td>
+                    <td>The container does not become a dead-end focus stop.</td>
+                </tr>
+                <tr>
+                    <td>Focused control disabled</td>
+                    <td>Retain focus, but prevent activation.</td>
+                    <td>Re-enabling the control restores activation without a focus move.</td>
+                </tr>
+                <tr>
+                    <td>Focused control removed</td>
+                    <td>Move focus to the next enabled eligible control, wrapping when necessary.</td>
+                    <td>The control tree has a defined recovery result rather than an arbitrary focus loss.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Activation and pointer behavior</h2>
+        <p>Space and Enter activate the focused interactive control. Clicking an enabled interactive control first moves focus to that control, then applies that control’s action. This separates shared focus behavior from the action that differs by control.</p>
+
+        <div class="sequence" aria-label="Click sequence">
+            <div class="step"><strong>1. Hit test:</strong> identify the enabled interactive control under the click.</div>
+            <div class="step"><strong>2. Focus:</strong> move focus to that control.</div>
+            <div class="step"><strong>3. Activate:</strong> apply the control-specific action once.</div>
+            <div class="step"><strong>4. Render:</strong> show the updated focus and control state in the next visible UI.</div>
+        </div>
+
+        <div class="callout warning">
+            <strong>Important distinction:</strong> a disabled focused control remains focused but cannot activate. A removed focused control does not remain in the tree, so the focus-recovery rule applies. Treating those cases as identical would lose the agreed behavior.
+        </div>
+
+        <h2>What this baseline does not decide</h2>
+        <p>Focus and activation are shared interaction rules. They do not decide each control’s domain-specific action. The next design step must define these semantics:</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Control</th>
+                    <th scope="col">Action still to define</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Checkbox</td>
+                    <td>Its checked-state transition and whether both Space and Enter toggle it.</td>
+                </tr>
+                <tr>
+                    <td>List</td>
+                    <td>Selection movement, selection confirmation, and how selection is rendered.</td>
+                </tr>
+                <tr>
+                    <td>Button</td>
+                    <td>The command or callback it invokes and its post-activation visible state.</td>
+                </tr>
+                <tr>
+                    <td>Tab control</td>
+                    <td>How keyboard and click input select a page and which descendants are then eligible.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Test the transitions, not a terminal library</h2>
+        <p>A headless focus test should operate on a fixed control tree and assert the resulting focused identifier and activation outcome. It should not assert cursor escape sequences or library objects. That keeps the test tied to the shared behavioral contract.</p>
+
+        <pre><code>Given: focus is on "sound-enabled"
+When: "sound-enabled" becomes disabled
+Then: focus remains "sound-enabled"
+And: Space does not activate it
+
+Given: focus is on "sound-enabled"
+When: "sound-enabled" is removed
+Then: focus moves to the next enabled eligible control</code></pre>
+
+        <h2>Retrieval practice</h2>
+        <p>Answer each question from memory, then expand it to check your answer.</p>
+
+        <details class="retrieval-check">
+            <summary>What happens when traversal reaches a panel or group?</summary>
+            <p>Focus enters the container by moving to its first enabled eligible child; the container is not itself a dead-end focus stop.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>What is the difference between disabling and removing the focused control?</summary>
+            <p>A disabled control retains focus but cannot activate. A removed control transfers focus to the next enabled eligible control, wrapping if needed.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>What is the required sequence for clicking an enabled interactive control?</summary>
+            <p>Identify the clicked control, move focus to it, apply its action once, and render the resulting state.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>Why should focus tests avoid terminal-library objects and escape sequences?</summary>
+            <p>The test should prove the portable focus and activation contract, not the incidental implementation of one terminal library.</p>
+        </details>
+
+        <h2>Primary source</h2>
+        <p>Review the updated <a href="../GameEngineAdapter/docs/guides/onboarding/tui-contract-considerations.md">TUI contract considerations</a>. It now separates the agreed scope and shared interaction baseline from the per-control behaviors that remain to be designed.</p>
+
+        <div class="footer">
+            <p><a href="0004-first-release-tui-requirement-baseline.html">Previous lesson: First-release TUI requirement baseline</a></p>
+            <p><a href="0006-control-action-baseline.html">Next lesson: Control action baseline</a></p>
+            <p>Ask a follow-up question when you are ready to define checkbox, list, button, and tab-control semantics.</p>
+        </div>
+    </main>
+</body>
+</html>

@@ -4,8 +4,10 @@ Preferences, observations, and working notes for this teaching session.
 
 ## User Preferences
 
-- **Advanced C# developer** — Comfortable with async/await, dependency injection, SOLID principles. Don't explain language features.
-- **Beginner game developer** — May need grounding on game architecture concepts (frame loop, render pipeline, cameras, etc.).
+- **Advanced C# developer** — Comfortable with async/await, dependency injection, SOLID principles. Don't explain
+  language features.
+- **Beginner game developer** — May need grounding on game architecture concepts (frame loop, render pipeline, cameras,
+  etc.).
 - **Task-oriented** — Wants to **continue implementing**, not just study. Prefer lessons that lead to concrete code.
 - **Focused on TUI** — Previous AI-assisted TUI implementation failed. This is a near-term priority.
 - **Time-aware** — A few months away from the codebase. Needs quick context restoration, not comprehensive tutorial.
@@ -13,7 +15,8 @@ Preferences, observations, and working notes for this teaching session.
 ## Teaching Approach
 
 - **Audit first, teach second** — Validate current state against documentation before designing lessons.
-- **Architecture before code** — Understand the adapter pattern and provider model before diving into specific interfaces.
+- **Architecture before code** — Understand the adapter pattern and provider model before diving into specific
+  interfaces.
 - **Concrete over abstract** — Use HeadlessAdapter as working example; trace a frame through the system.
 - **TUI as validation** — Building a TUI adapter will validate the interface design and fill documentation gaps.
 - **Documentation as first-class output** — Improve subject repo docs so others can onboard without this teach repo.
@@ -62,25 +65,38 @@ Preferences, observations, and working notes for this teaching session.
 **Status**: Branch `60-prototype-tui-user-interface-elements-menu-list-panel-rendering` — changes discarded, not pushed.
 
 **Failures Observed**:
-- ⚠️ **Constant flickering** — render loop buffering issue; likely rendering every frame without proper double-buffering or debouncing
-- ⚠️ **Non-functional controls** — checkboxes and other UI elements could not be interacted with; input event propagation broken
+
+- ⚠️ **Constant flickering** — render loop buffering issue; likely rendering every frame without proper double-buffering
+  or debouncing
+- ⚠️ **Non-functional controls** — checkboxes and other UI elements could not be interacted with; input event
+  propagation broken
 - ⚠️ **No mouse support** — mouse input not captured or handled
 - ⚠️ **Unpredictable tab focus** — tab key navigation did not work reliably; focus management broken
 
 **Root Causes (Hypothesized)**:
-- **Render loop timing**: TUI tried to re-render every frame, but terminal rendering is expensive; flickering suggests no dirty-region tracking or frame buffering
-- **Input model mismatch**: Terminal input (keyboard, mouse) requires event-based architecture; the TUI implementation may have tried polling or buffering incorrectly
-- **Control architecture**: UI controls (checkboxes, menus) may have been implemented in-adapter rather than relying on `IUserInterfaceProvider`
-- **Focus state**: Tab/focus management is not a terminal-native feature; had to be manually implemented and likely was done incorrectly
 
-**Lesson**: Terminal UI is **fundamentally different** from graphical rendering. Cannot simply map `IRenderProvider` calls to ASCII art. Need separate abstraction.
+- **Render loop timing**: TUI tried to re-render every frame, but terminal rendering is expensive; flickering suggests
+  no dirty-region tracking or frame buffering
+- **Input model mismatch**: Terminal input (keyboard, mouse) requires event-based architecture; the TUI implementation
+  may have tried polling or buffering incorrectly
+- **Control architecture**: UI controls (checkboxes, menus) may have been implemented in-adapter rather than relying on
+  `IUserInterfaceProvider`
+- **Focus state**: Tab/focus management is not a terminal-native feature; had to be manually implemented and likely was
+  done incorrectly
+
+**Lesson**: Terminal UI is **fundamentally different** from graphical rendering. Cannot simply map `IRenderProvider`
+calls to ASCII art. Need separate abstraction.
 
 ## Working Hypotheses (To Be Tested in Lesson 3)
 
-- **Hypothesis A**: TUI should **NOT** try to implement `IRenderProvider` for visual rendering. Instead, use `IUserInterfaceProvider` for all TUI output.
-- **Hypothesis B**: TUI should report `Supports2D = false, Supports3D = false`, signaling it's **text-only**. Game logic should check capabilities and adapt.
-- **Hypothesis C**: For a 4X game in TUI: render map via text (ASCII grid), render UI via `IUserInterfaceProvider` (text panels, buttons). Keep rendering separate from input.
-- **Hypothesis D**: Input model must be **event-driven** with proper queue/dispatch, not polled. Mouse events need explicit handling.
+- **Hypothesis A**: TUI should **NOT** try to implement `IRenderProvider` for visual rendering. Instead, use
+  `IUserInterfaceProvider` for all TUI output.
+- **Hypothesis B**: TUI should report `Supports2D = false, Supports3D = false`, signaling it's **text-only**. Game logic
+  should check capabilities and adapt.
+- **Hypothesis C**: For a 4X game in TUI: render map via text (ASCII grid), render UI via `IUserInterfaceProvider` (text
+  panels, buttons). Keep rendering separate from input.
+- **Hypothesis D**: Input model must be **event-driven** with proper queue/dispatch, not polled. Mouse events need
+  explicit handling.
 
 *These will be validated during Lesson 3 (Requirements Design).*
 
@@ -92,7 +108,8 @@ Preferences, observations, and working notes for this teaching session.
 
 ## Documentation Improvements Needed (In Subject Repo)
 
-- [ ] Add examples for each provider (IRenderProvider, IInputProvider, IUserInterfaceProvider, IAudioPlayer, IAssetProvider)
+- [ ] Add examples for each provider (IRenderProvider, IInputProvider, IUserInterfaceProvider, IAudioPlayer,
+      IAssetProvider)
 - [ ] Explain capability negotiation with code examples
 - [ ] Add TUI-specific guidance (requirements, design patterns, pitfalls)
 - [ ] Create checklist for implementing a new adapter

@@ -20,6 +20,7 @@
 📖 **Status**: Ready to read
 
 **Topics covered:**
+
 - Why game logic should be decoupled from engines (the problem)
 - The Adapter Pattern and Hexagonal Architecture (the solution)
 - The three architectural layers (contracts, logic, adapters)
@@ -41,9 +42,11 @@
 | No mouse support | Event model broken; mouse events not captured |
 | Unpredictable tab focus | Manual focus management implemented incorrectly |
 
-**Core Issue**: TUI tried to map visual rendering (sprites, meshes) to terminal output. Terminal rendering is fundamentally different and inefficient.
+**Core Issue**: TUI tried to map visual rendering (sprites, meshes) to terminal output. Terminal rendering is
+fundamentally different and inefficient.
 
 **Better Approach**:
+
 - TUI reports `Supports2D = false, Supports3D = false`
 - All output through `IUserInterfaceProvider` (text panels, buttons)
 - Game logic checks capabilities and adapts rendering strategy
@@ -114,6 +117,7 @@ These will guide Lesson 3 (TUI Requirements):
 ## Your Teaching Agent Is Available
 
 Need clarification? Questions on:
+
 - Architecture concepts
 - Why previous TUI approach failed
 - How to read the Phase 1 plan
