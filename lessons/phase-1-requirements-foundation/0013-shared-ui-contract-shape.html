@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 13: Shared UI Contract Shape</title>
+    <link rel="stylesheet" href="../../assets/lesson.css">
+</head>
+<body>
+    <main>
+        <h1>Lesson 13: Shared UI Contract Shape</h1>
+        <p class="subtitle">Translate the agreed TUI behavior into a minimal boundary that neither owns game state nor exposes terminal details.</p>
+
+        <div class="callout">
+            <strong>Mission connection:</strong> <code>IUserInterfaceProvider</code> is currently empty. The next contract must make focus, selection, layout, and events testable without becoming a terminal-widget wrapper or a second game-state model.
+        </div>
+
+        <h2>Four directions across the boundary</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Direction</th>
+                    <th scope="col">What crosses the boundary</th>
+                    <th scope="col">Example</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Consumer to adapter: definition</td>
+                    <td>What the UI means and contains.</td>
+                    <td>A list with stable item identifiers, labels, and its consumer-supplied initial selection.</td>
+                </tr>
+                <tr>
+                    <td>Consumer to adapter: update</td>
+                    <td>Changed application-owned data or control state.</td>
+                    <td>Replace a city's list entries or disable a button.</td>
+                </tr>
+                <tr>
+                    <td>Adapter to consumer: event</td>
+                    <td>A user interaction or adapter-observed transition.</td>
+                    <td>List item <code>city-b</code> selected, checkbox value changed, or button activated.</td>
+                </tr>
+                <tr>
+                    <td>Adapter internal work</td>
+                    <td>Measurement, terminal input handling, layout, and drawing.</td>
+                    <td>Translate a mouse click into a stable control identifier and redraw.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p>Only the first three directions need shared contract types. The fourth remains adapter implementation detail.</p>
+
+        <h2>Definitions describe current intent, not mutable widgets</h2>
+        <p>A control definition should use stable identifiers and declarative properties. It says that a button exists, has a label, is enabled, and represents a consumer-defined action. It must not expose a terminal library's button instance, event loop, cursor coordinate, or callback registration method.</p>
+
+        <pre><code>Button definition:
+  id: "build-farm"
+  label: "Build Farm"
+  enabled: true
+
+Adapter event:
+  kind: Activated
+  controlId: "build-farm"</code></pre>
+
+        <p>The consumer receives the event, decides its domain effect, updates its own state, and supplies a new definition or update. The adapter does not directly create a farm because a terminal button was activated.</p>
+
+        <p>A consumer update can intentionally produce an adapter event when the contract defines that transition. For example, applying a selection update may report the resulting selection so another consumer component can update a details panel. Such events are explicit behavior, not an automatic echo of every update.</p>
+
+        <h2>Updates replace state; events report transitions</h2>
+        <p>Consumer-to-adapter updates represent the latest intended UI state. Adapter-to-consumer events represent something that happened. Do not overload one message type for both directions: an event such as <code>Selected("city-b")</code> is not a request for the adapter to choose that selection.</p>
+
+        <div class="callout warning">
+            <strong>Ownership rule:</strong> selection and focus are observable adapter state, but their application significance belongs to the consumer. The adapter reports transitions; it does not persist domain decisions or silently fabricate invalid initial state.
+        </div>
+
+        <h2>Commands need no public terminal-input API</h2>
+        <p>A production adapter obtains key and pointer input from its platform. Headless tests need a deterministic way to dispatch equivalent semantic input, such as Tab, Down, Activate, or Click(control identifier). That seam should serve testing without requiring consumer code to know how a terminal library produces raw input events.</p>
+
+        <pre><code>Headless test:
+  dispatch(Tab)
+  advanceFrame()
+  assert focusedControlId == "city-list"
+
+Terminal adapter:
+  receives physical Tab key
+  translates it to the same semantic navigation behavior</code></pre>
+
+        <h2>Start with the smallest public vocabulary</h2>
+        <p>The first contract should name only the controls and outcomes already agreed: labels, checkboxes, lists, panels/groups, buttons, and tab controls; IDs; enabled state; selection; events; viewport/layout outcome; and frame visibility. Keep layout rules and terminal capabilities declarative. Defer controls or callbacks without a tested consumer scenario.</p>
+
+        <h2>Retrieval practice</h2>
+        <p>Answer each question from memory, then expand it to check your answer.</p>
+
+        <details class="retrieval-check">
+            <summary>What are the three kinds of information that cross the shared UI boundary?</summary>
+            <p>Consumer-supplied definitions, consumer-supplied updates, and adapter-reported events. Terminal implementation work remains internal.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>Why should a control definition use stable identifiers rather than terminal-widget objects?</summary>
+            <p>Identifiers describe engine-independent intent and remain testable across adapters. Widget objects leak a terminal library into consumer code.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>How do an update and an event differ?</summary>
+            <p>An update expresses the consumer's latest intended UI state; an event reports a user interaction or observed adapter transition.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>Why should headless tests dispatch semantic commands rather than raw terminal input?</summary>
+            <p>Semantic commands make behavior deterministic and adapter-independent while the production adapter remains responsible for translating platform input.</p>
+        </details>
+
+        <h2>Decision recorded</h2>
+        <p>The MVP accepts immutable whole-tree updates because they preserve consumer ownership and make invalid-state validation deterministic. Stable control identifiers and the contract boundary must permit incremental updates later, when large UI trees make replacement unnecessarily expensive.</p>
+
+        <div class="footer">
+            <p><a href="0012-headless-contract-testing.html">Previous lesson: Headless contract testing</a></p>
+        </div>
+    </main>
+</body>
+</html>

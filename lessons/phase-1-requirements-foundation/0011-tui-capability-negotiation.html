@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 11: TUI Capability Negotiation</title>
+    <link rel="stylesheet" href="../../assets/lesson.css">
+</head>
+<body>
+    <main>
+        <h1>Lesson 11: TUI Capability Negotiation</h1>
+        <p class="subtitle">Let consumer code choose an appropriate experience from advertised adapter capabilities.</p>
+
+        <div class="callout">
+            <strong>Mission connection:</strong> A terminal adapter is not a reduced 2D engine. Capability negotiation lets the game preserve meaningful interaction when sprites, meshes, mouse input, color, or advanced terminal features are unavailable.
+        </div>
+
+        <h2>Capabilities describe the adapter, not the desired UI</h2>
+        <p>A capability is an observable fact about what an adapter can reliably provide. The consumer reads those facts and selects a compatible presentation or behavior. It must not issue an unsupported request and hope the adapter silently approximates it.</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Capability</th>
+                    <th scope="col">Possible value</th>
+                    <th scope="col">Consumer response</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>2D sprites</td>
+                    <td>Unavailable in the TUI</td>
+                    <td>Use labels, lists, and panels instead of attempting sprite rendering.</td>
+                </tr>
+                <tr>
+                    <td>Mouse click</td>
+                    <td>Available in the first TUI scope</td>
+                    <td>Enable click interaction while retaining keyboard access.</td>
+                </tr>
+                <tr>
+                    <td>Color</td>
+                    <td>May vary by terminal</td>
+                    <td>Ensure information remains understandable without color alone.</td>
+                </tr>
+                <tr>
+                    <td>Viewport layout</td>
+                    <td>Available through the adapter</td>
+                    <td>Use the shared control tree; do not calculate terminal output directly.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Absence is normal, not exceptional</h2>
+        <p>Capability negotiation happens before an optional feature is used. A TUI that reports no 2D or 3D rendering support is valid. It is not expected to simulate those features, throw on every frame, or make the game unusable. The consumer selects a text-oriented path instead.</p>
+
+        <pre><code>if adapter.Supports2D:
+    showMapSprites()
+else:
+    showMapSummaryPanel()
+
+if adapter.SupportsMouseClick:
+    allowPointerSelection()
+
+always:
+    allowKeyboardSelection()</code></pre>
+
+        <p>The important distinction is between <strong>required</strong> capabilities, without which the application cannot run, and <strong>optional</strong> capabilities, for which the consumer must provide a fallback. The adapter does not decide which presentation matters most to a particular game.</p>
+
+        <h2>Do not use capabilities as a proxy for state</h2>
+        <p>A capability answers whether an adapter can provide a feature. It does not answer whether a control is enabled, whether its data is present, or whether the terminal is currently too small. Those are current UI-state or layout outcomes and can change during a session.</p>
+
+        <div class="callout warning">
+            <strong>Example:</strong> mouse click support may be advertised by the adapter, yet a button can still be disabled. Conversely, a compact layout can be active even though the adapter supports wide layouts. Keep these questions separate in the contract.
+        </div>
+
+        <h2>Capability contracts must be stable and testable</h2>
+        <p>Each advertised capability needs a precise definition. If an adapter reports mouse-click support, it must deliver click behavior according to the agreed focus and activation rules. If it reports a feature as unavailable, consumer fallback behavior should be testable with a headless adapter configured without that capability.</p>
+
+        <pre><code>Given: an adapter without 2D sprite support
+When: the game creates its map view
+Then: it creates a text summary panel instead of requesting sprites
+
+Given: an adapter with mouse-click support
+When: the user clicks an enabled button
+Then: focus moves to the button and its action is invoked once</code></pre>
+
+        <h2>Retrieval practice</h2>
+        <p>Answer each question from memory, then expand it to check your answer.</p>
+
+        <details class="retrieval-check">
+            <summary>Who decides how to respond when an optional capability is unavailable?</summary>
+            <p>The consumer. It chooses a compatible fallback presentation or behavior; the adapter advertises what it can provide.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>Why is a TUI without 2D or 3D support still a valid adapter?</summary>
+            <p>The game can select a text-oriented presentation. The adapter is valid when it accurately advertises its capabilities and supports its promised contract.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>Is a disabled button evidence that the adapter lacks mouse-click support?</summary>
+            <p>No. Mouse-click support is an adapter capability; a button's enabled state is current consumer-owned UI state.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>What must an adapter do after advertising a capability?</summary>
+            <p>It must reliably provide the precisely defined behavior represented by that capability, so consumers can test and rely on it.</p>
+        </details>
+
+        <h2>Decision recorded</h2>
+        <p>The first-release TUI advertises no 2D or 3D rendering support, supports mouse clicks, and always supports keyboard interaction. Color is not guaranteed, so consumer UI must not depend on color alone to convey information.</p>
+
+        <div class="footer">
+            <p><a href="0010-layout-intent-and-viewport-rules.html">Previous lesson: Layout intent and viewport rules</a></p>
+        </div>
+    </main>
+</body>
+</html>

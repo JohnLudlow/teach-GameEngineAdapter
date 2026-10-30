@@ -10,7 +10,8 @@ Phase 1 is **complete and well-documented**. All core interfaces and DTOs are im
 working `HeadlessAdapter` exists for CI testing. The codebase is **ready for Phase 2 and concrete engine adapters**
 (TUI, MonoGame, etc.).
 
-The project structure is sound, with clear separation between contracts (Core) and implementations (Headless, future adapters).
+The project structure is sound, with clear separation between contracts (Core) and implementations (Headless, future
+adapters).
 
 ---
 
