@@ -52,9 +52,8 @@ High-quality resources for understanding GameEngineAdapter, game architecture, a
 
 - **[Async/Await Best Practices (Stephen Cleary)](https://blog.stephencleary.com/2012/02/async-library-design.html)** —
   Relevant to `async Task InitializeAsync()` pattern used in adapters.
-- **[Struct Performance (Microsoft
-  Docs)](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/struct)** — Why DTOs are
-  structs (allocation-friendly).
+- **[Struct Performance (Microsoft Docs)](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/struct)**
+  — Why DTOs are structs (allocation-friendly).
 - **[Pooling and Object Reuse](https://docs.microsoft.com/en-us/dotnet/standard/memory-and-spans/memory-pooling)** —
   Relevant to high-performance rendering.
 

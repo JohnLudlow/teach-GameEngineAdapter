@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 9: Resize and Redraw Decisions</title>
+    <link rel="stylesheet" href="../../assets/lesson.css">
+</head>
+<body>
+    <main>
+        <h1>Lesson 9: Resize and Redraw Decisions</h1>
+        <p class="subtitle">Define what the terminal adapter observes, recalculates, and makes visible when its viewport or UI state changes.</p>
+
+        <div class="callout">
+            <strong>Mission connection:</strong> The prior prototype flickered because it treated terminal output like an always-redrawn game scene. A reliable TUI needs observable resize and redraw rules before a terminal library can supply its own defaults.
+        </div>
+
+        <h2>Resize is a viewport change, not a domain change</h2>
+        <p>A terminal resize changes the space available to the adapter. It does not change the game or application state. The adapter must learn the new size, recalculate layout from the same consumer-owned UI definition, and render the result within the new viewport.</p>
+
+        <pre><code>Before resize: viewport 120 columns × 40 rows
+Consumer state: Economy tab selected, "Build Farm" button focused
+
+After resize: viewport 80 columns × 24 rows
+Consumer state: Economy tab selected, "Build Farm" button focused
+Adapter work: recompute layout and render the same state in 80 × 24</code></pre>
+
+        <p>Resize must not silently alter selection, focus, checked values, or application state merely to fit a smaller terminal. If a control cannot fit, that is a layout-policy question, not permission to invent a different interaction state.</p>
+
+        <h2>A redraw makes the latest state visible</h2>
+        <p><strong>Invalidation</strong> means the current terminal image is no longer an accurate representation of the UI state. A <strong>redraw</strong> renders that latest state. The shared contract should describe the observable trigger and visibility point, not require a dirty-region or double-buffer implementation.</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Change</th>
+                    <th scope="col">Does the display need a redraw?</th>
+                    <th scope="col">Reason</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Terminal viewport is resized</td>
+                    <td>Yes</td>
+                    <td>The layout may no longer fit the available space.</td>
+                </tr>
+                <tr>
+                    <td>Focus, selection, checkbox value, or visible tab changes</td>
+                    <td>Yes</td>
+                    <td>The user-visible representation changed.</td>
+                </tr>
+                <tr>
+                    <td>Consumer replaces data displayed by a control</td>
+                    <td>Yes</td>
+                    <td>The content is stale.</td>
+                </tr>
+                <tr>
+                    <td>No UI state or viewport change</td>
+                    <td>No</td>
+                    <td>Redrawing an identical idle screen adds work and risks flicker without a visible benefit.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Frame timing must be explicit</h2>
+        <p>The adapter may collect several changes before its next render opportunity, then draw the latest complete state once. This coalescing is an implementation detail. The contract decision is when callers can rely on the update being visible: immediately after dispatch, by the next frame, or only after an explicit render request.</p>
+
+        <div class="callout warning">
+            <strong>Do not confuse correctness with frequency:</strong> rendering every frame can be correct only if the output remains stable. It is not required merely because the game loop has frames. A TUI should redraw when its visible state is invalidated and must remain visually stable while idle.
+        </div>
+
+        <h2>Three decisions the contract still needs</h2>
+        <ol>
+            <li><strong>Resize notification:</strong> Does the consumer receive the new viewport dimensions, or does the adapter use them internally to lay out a consumer-supplied control tree?</li>
+            <li><strong>Too-small viewport:</strong> When minimum layout requirements do not fit, should the adapter render a deterministic compact or clipped state, or an explicit "terminal too small" view?</li>
+            <li><strong>Visibility boundary:</strong> Is a valid UI change guaranteed visible by the next frame, or must the consumer explicitly request a render?</li>
+        </ol>
+
+        <h2>Agreed first-release baseline</h2>
+        <p>The adapter owns layout using the current viewport, renders an explicit minimum-size fallback view, and guarantees a redraw by the next frame after a viewport or visible UI-state change. This keeps sizing details out of game logic, avoids accidental clipping, and gives tests a clear visibility boundary.</p>
+
+        <p>The shared contract must remain extensible for a consumer to supply viewport-size rules for alternative layouts in a later release. The first release does not need that feature, but its API must not assume that one adapter-owned layout policy can be the only policy forever.</p>
+
+        <pre><code>Given: a valid UI is rendered at 120 × 40
+When: the terminal changes to 80 × 24
+Then: the adapter recomputes layout using 80 × 24
+And: focus and selection are unchanged
+And: the resulting view is visible by the next frame
+
+Given: a valid UI cannot meet its minimum size at 20 × 5
+When: the next frame renders
+Then: an explicit minimum-size fallback is visible
+And: the adapter does not invent a new selection or application state</code></pre>
+
+        <h2>Retrieval practice</h2>
+        <p>Answer each question from memory, then expand it to check your answer.</p>
+
+        <details class="retrieval-check">
+            <summary>What must a resize preserve?</summary>
+            <p>Consumer-owned UI and application state, including focus and selection. The adapter recalculates layout for the new viewport.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>When does a TUI need a redraw?</summary>
+            <p>When the viewport or a user-visible UI state changes. It need not redraw an unchanged idle screen.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>What is the difference between invalidation and redraw?</summary>
+            <p>Invalidation identifies that the displayed image is stale; a redraw makes the latest state visible.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>Why is a "redraw every game frame" rule insufficient?</summary>
+            <p>It does not define whether output is stable, when a state change is visible, or how the adapter responds to a resize. It can also cause unnecessary work and flicker.</p>
+        </details>
+
+        <h2>Next decision</h2>
+        <p>The resize and redraw baseline is now agreed. The next lesson can define how layout constraints and the future viewport-rule extension point should be represented without giving consumer code ownership of terminal rendering.</p>
+
+        <div class="footer">
+            <p><a href="0008-selection-lifecycle-baseline.html">Previous lesson: Selection lifecycle baseline</a></p>
+        </div>
+    </main>
+</body>
+</html>

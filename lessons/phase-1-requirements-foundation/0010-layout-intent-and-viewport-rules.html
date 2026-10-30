@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 10: Layout Intent and Viewport Rules</title>
+    <link rel="stylesheet" href="../../assets/lesson.css">
+</head>
+<body>
+    <main>
+        <h1>Lesson 10: Layout Intent and Viewport Rules</h1>
+        <p class="subtitle">Keep terminal rendering adapter-owned while leaving room for consumer-selected responsive layouts.</p>
+
+        <div class="callout">
+            <strong>Mission connection:</strong> The first-release TUI owns layout, but future games may need different arrangements at different terminal sizes. The contract must preserve that option without putting cursor movement, screen clearing, or terminal measurements into consumer code.
+        </div>
+
+        <h2>Three responsibilities, not one</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Responsibility</th>
+                    <th scope="col">Owner</th>
+                    <th scope="col">Example</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>UI state and domain meaning</td>
+                    <td>Consumer</td>
+                    <td>The Economy tab is selected and its list contains three cities.</td>
+                </tr>
+                <tr>
+                    <td>Responsive layout intent</td>
+                    <td>Consumer, if it opts in later</td>
+                    <td>At narrow widths, show city details below the list rather than beside it.</td>
+                </tr>
+                <tr>
+                    <td>Measurement, placement, and terminal drawing</td>
+                    <td>Adapter</td>
+                    <td>Determine character-cell bounds, clip safely, and write terminal output.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p>The second responsibility is deliberately about <strong>intent</strong>, not rendering. A consumer may choose an arrangement using a viewport category or dimensions, but it does not calculate terminal coordinates or render controls itself.</p>
+
+        <h2>What a future viewport rule may decide</h2>
+        <p>A viewport rule chooses among semantic layout variants. It can select which regions are visible, their order, and their broad relationship. The adapter still determines whether the chosen variant fits, applies spacing, and renders the result.</p>
+
+        <pre><code>Wide viewport:
+[ city list            ][ selected city details ]
+
+Narrow viewport:
+[ city list                                ]
+[ selected city details                    ]
+
+Too small for either:
+[ Terminal is too small: minimum 40 × 12 ]</code></pre>
+
+        <p>These are three layout outcomes for the same UI state. Selection, focus, and the underlying city data do not change because the terminal became narrower.</p>
+
+        <h2>What a viewport rule must not decide</h2>
+        <ul>
+            <li>Terminal cursor coordinates, clearing behavior, colors, or output buffering.</li>
+            <li>Whether a key press activates a control or where focus moves.</li>
+            <li>Fallback state that invents a different selected item, checked value, or domain choice.</li>
+            <li>Whether the adapter redraws after a visible change.</li>
+        </ul>
+
+        <p>Those responsibilities must remain uniform across layout variants. Otherwise, each responsive arrangement becomes a separate interaction model and deterministic headless testing is lost.</p>
+
+        <h2>Prefer a narrow extension seam</h2>
+        <p>The first release needs no viewport-rule API. When one is added, it should accept only layout-relevant information and produce a declarative layout choice or specification. Do not expose a terminal object or callback that renders directly.</p>
+
+        <div class="callout warning">
+            <strong>Design boundary:</strong> a callback such as <code>Render(Terminal terminal)</code> would reintroduce engine-specific rendering into consumer code. A rule such as <code>ChooseLayout(viewport)</code> preserves the adapter boundary because the adapter still owns rendering.
+        </div>
+
+        <h2>Test the invariant, not terminal output</h2>
+        <p>A headless test can model wide, narrow, and too-small viewports. It should verify the selected layout outcome and that focus, selection, and values are preserved across the changes. It need not assert exact cursor positions or ANSI sequences.</p>
+
+        <pre><code>Given: "City A" is selected and "Build Farm" is focused
+When: the viewport changes from wide to narrow
+Then: the narrow layout variant is selected
+And: "City A" remains selected
+And: "Build Farm" remains focused
+
+Given: the viewport is too small for every supported variant
+When: the next frame renders
+Then: the minimum-size fallback is visible
+And: no consumer-owned UI state changes</code></pre>
+
+        <h2>Retrieval practice</h2>
+        <p>Answer each question from memory, then expand it to check your answer.</p>
+
+        <details class="retrieval-check">
+            <summary>Who owns terminal measurement and drawing when a consumer supplies a viewport rule?</summary>
+            <p>The adapter. The consumer may supply layout intent, but it does not measure, position, or render terminal controls.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>What may change between wide and narrow layout variants?</summary>
+            <p>Visible regions, their order, and their broad arrangement may change. The consumer-owned UI and application state must not change merely because the viewport changed.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>Why should a future viewport-rule API avoid a terminal rendering callback?</summary>
+            <p>It would make consumer code engine-specific and break the adapter boundary. The adapter must remain responsible for terminal rendering.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>What should a headless responsive-layout test assert?</summary>
+            <p>It should assert the chosen layout outcome and preservation of focus, selection, and values, rather than terminal cursor positions or escape sequences.</p>
+        </details>
+
+        <h2>Decision recorded</h2>
+        <p>The viewport-rule API shape is deferred until a real consumer requires it. The shared contract preserves the adapter boundary and extension point, but defines neither named variants nor region constraints prematurely.</p>
+
+        <div class="footer">
+            <p><a href="0009-resize-and-redraw-decisions.html">Previous lesson: Resize and redraw decisions</a></p>
+        </div>
+    </main>
+</body>
+</html>

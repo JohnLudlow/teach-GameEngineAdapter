@@ -1,6 +1,7 @@
 # TUI requirements reasoning
 
-The user distinguishes observable requirements from features and sees visual stability as behavior, not an implementation.
+The user distinguishes observable requirements from features and sees visual stability as behavior, not an
+implementation.
 
 They recognize that an empty `IUserInterfaceProvider` cannot define portable UI behavior.
 

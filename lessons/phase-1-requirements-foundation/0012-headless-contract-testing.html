@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 12: Headless Contract Testing</title>
+    <link rel="stylesheet" href="../../assets/lesson.css">
+</head>
+<body>
+    <main>
+        <h1>Lesson 12: Headless Contract Testing</h1>
+        <p class="subtitle">Prove focus, input, selection, layout, and invalidation behavior without a real terminal.</p>
+
+        <div class="callout">
+            <strong>Mission connection:</strong> The previous TUI prototype was difficult to trust because flicker and input behavior appeared only at runtime. A headless contract test makes the observable interaction model executable before a terminal library is involved.
+        </div>
+
+        <h2>Test the boundary, not the terminal</h2>
+        <p>A headless UI adapter accepts the same control definition and input events as a future terminal adapter, but records observable results instead of writing to a terminal. Tests assert what a consumer can rely on: focus, selection, activation, visible layout outcome, and redraw requests.</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Do assert</th>
+                    <th scope="col">Do not assert in contract tests</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>The focused control after Tab, Shift+Tab, click, removal, or disablement.</td>
+                    <td>Terminal cursor coordinates or escape sequences.</td>
+                </tr>
+                <tr>
+                    <td>The selected list item or tab page after navigation or removal.</td>
+                    <td>Exact character spacing or terminal-library widgets.</td>
+                </tr>
+                <tr>
+                    <td>An activation or value-change event and its identifier.</td>
+                    <td>Internal event-loop calls or rendering buffers.</td>
+                </tr>
+                <tr>
+                    <td>The layout variant or minimum-size fallback selected for a viewport.</td>
+                    <td>Implementation-specific layout algorithms.</td>
+                </tr>
+                <tr>
+                    <td>That a visible change requests redraw by the next frame.</td>
+                    <td>The number of low-level terminal writes.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Use a trace of inputs and observable results</h2>
+        <p>A contract test should read like an interaction transcript: establish the control tree and viewport, dispatch an input or state change, advance the frame when the contract requires it, then assert the result. The test is independent of whether the later adapter uses Terminal.Gui, Spectre.Console, or another library.</p>
+
+        <pre><code>Given: a list [A, B, C] with B selected and a 100 × 30 viewport
+When: Down is dispatched
+And: the next frame is advanced
+Then: C is selected
+And: the consumer receives selection identifier "C"
+And: a redraw has made the new state visible</code></pre>
+
+        <h2>Separate consumer state from adapter observations</h2>
+        <p>The consumer remains the source of truth for application data and receives events. The test may use a small recording consumer to observe those events. The adapter exposes only the outcomes needed to prove its contract: focus, current selection, layout outcome, and visibility state.</p>
+
+        <div class="callout warning">
+            <strong>Avoid test-only back doors:</strong> tests should not reach into private adapter fields to inspect focus or buffers. If an outcome matters, represent it as a stable contract observation or consumer event. Otherwise a refactor changes tests without changing behavior.
+        </div>
+
+        <h2>Test invariants across multiple paths</h2>
+        <p>The same rule should hold regardless of how it was reached. For example, selection can change through arrows, click, or selected-item removal; each path must report the new identifier to the consumer. This catches adapters that implement one input route correctly but allow another to bypass the shared behavior.</p>
+
+        <pre><code>Given: a button is focused and enabled
+When: Space is dispatched
+Then: its action is reported exactly once
+
+Given: the same enabled button is clicked
+When: the next frame is advanced
+Then: focus moves to the button
+And: its action is reported exactly once</code></pre>
+
+        <h2>Capabilities belong in the test matrix</h2>
+        <p>Run the same consumer scenario against configured capability sets where behavior should differ. A TUI without 2D support should lead the consumer to choose its text presentation. An adapter with mouse-click support should satisfy the click focus and activation rules. Do not duplicate every test for every capability; cover each advertised branch and its fallback.</p>
+
+        <h2>Retrieval practice</h2>
+        <p>Answer each question from memory, then expand it to check your answer.</p>
+
+        <details class="retrieval-check">
+            <summary>What should a headless contract test assert after an input event?</summary>
+            <p>Observable behavior such as focus, selection, consumer events, layout outcome, and redraw visibility—not terminal-specific output.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>Why should tests avoid private adapter state?</summary>
+            <p>Private-state assertions couple tests to implementation details. Stable contract observations let the implementation change while preserving behavior.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>Why test selection changes through arrows, clicks, and removal?</summary>
+            <p>All paths must obey the same selection and reporting invariant. Testing multiple paths finds routes that bypass the shared behavior.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>What does advancing the next frame establish in a redraw test?</summary>
+            <p>It establishes the contract's visibility boundary: an invalidated, user-visible change has been rendered by the next frame.</p>
+        </details>
+
+        <h2>Decision recorded</h2>
+        <p>Headless contract tests must observe the focused control identifier, selected item or page identifier, consumer events, selected layout outcome or fallback, and next-frame visibility. They must not expose terminal-specific internals.</p>
+
+        <div class="footer">
+            <p><a href="0011-tui-capability-negotiation.html">Previous lesson: TUI capability negotiation</a></p>
+        </div>
+    </main>
+</body>
+</html>

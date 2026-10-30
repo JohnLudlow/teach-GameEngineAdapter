@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 8: Selection Lifecycle Baseline</title>
+    <link rel="stylesheet" href="../../assets/lesson.css">
+</head>
+<body>
+    <main>
+        <h1>Lesson 8: Selection Lifecycle Baseline</h1>
+        <p class="subtitle">Make selection ownership, invalid state, empty controls, and removal recovery explicit.</p>
+
+        <div class="callout">
+            <strong>Mission connection:</strong> The future adapter must not silently choose application state. These rules keep selection owned by the consumer while making interaction deterministic when a collection changes.
+        </div>
+
+        <h2>The consumer owns initial selection</h2>
+        <p>Every non-empty list and tab control receives its initial selection from the consumer. The control definition is invalid if that selection is missing or does not identify a current item or page. The adapter must reject invalid state rather than silently selecting a different item.</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Control state at creation</th>
+                    <th scope="col">Required result</th>
+                    <th scope="col">Why it matters</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Non-empty control with a valid supplied selection</td>
+                    <td>Render with that item or page selected.</td>
+                    <td>The consumer remains the source of truth.</td>
+                </tr>
+                <tr>
+                    <td>Non-empty control with no supplied selection</td>
+                    <td>Reject the control definition as invalid.</td>
+                    <td>The adapter does not invent an application choice.</td>
+                </tr>
+                <tr>
+                    <td>Non-empty control with an unknown supplied identifier</td>
+                    <td>Reject the control definition as invalid.</td>
+                    <td>The visible selection cannot disagree with the current collection.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Empty controls are visible but non-interactive</h2>
+        <p>An empty list or tab control still renders, but it has no selection. Navigation and activation do nothing. This is different from hiding the control: the consumer may still need its layout position or empty-state appearance.</p>
+
+        <div class="callout warning">
+            <strong>Focus boundary:</strong> an empty control has no eligible item or page to activate. Its precise relationship to parent focus traversal must be represented by the future control-tree contract; this lesson only establishes that its own navigation and activation do nothing.
+        </div>
+
+        <h2>Recovering after selected-item removal</h2>
+        <p>When the selected item or page is removed, select the next remaining element. If the removed element was last, select the previous remaining element. If removal leaves the collection empty, the control follows the non-interactive empty-control rule.</p>
+
+        <pre><code>Given: list [A, B, C] with B selected
+When: B is removed
+Then: C is selected
+
+Given: tabs [Map, Economy, Research] with Research selected
+When: Research is removed
+Then: Economy is selected
+
+Given: list [A] with A selected
+When: A is removed
+Then: the list is empty and non-interactive</code></pre>
+
+        <h2>Report transitions back to the consumer</h2>
+        <p>Selection can change through arrow keys, tab navigation, click selection, or removal recovery. After any change, the control must report the selected identifier to the consumer. That lets the game or application update its state without the adapter taking ownership of domain data.</p>
+
+        <h2>Retrieval practice</h2>
+        <p>Answer each question from memory, then expand it to check your answer.</p>
+
+        <details class="retrieval-check">
+            <summary>Who supplies the initial selection for a non-empty list or tab control?</summary>
+            <p>The consumer supplies it. The adapter validates that the identifier exists in the current items or pages.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>What happens when an initial selection is missing or invalid?</summary>
+            <p>The control definition is rejected as invalid; the adapter does not silently select a fallback.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>What happens when the selected item is removed and a next item exists?</summary>
+            <p>The next remaining item becomes selected. If none exists, the previous remaining item becomes selected.</p>
+        </details>
+
+        <details class="retrieval-check">
+            <summary>What can an empty list or tab control do?</summary>
+            <p>It renders as non-interactive. Navigation and activation do nothing because it has no selected item or page.</p>
+        </details>
+
+        <h2>Primary source</h2>
+        <p>Review the updated <a href="../../GameEngineAdapter/docs/guides/onboarding/tui-contract-considerations.md">TUI contract considerations</a>. It now defines the consumer-owned selection lifecycle and invalid-state behavior that a future shared contract must represent.</p>
+
+        <div class="footer">
+            <p><a href="0007-navigation-bounds-baseline.html">Previous lesson: Navigation bounds baseline</a></p>
+            <p>Ask a follow-up question when you are ready to define resize behavior and redraw visibility.</p>
+        </div>
+    </main>
+</body>
+</html>
