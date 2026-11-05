@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="src/UiContract/UiContract.csproj" />
+  <Project Path="src/TerminalGuiDemo/TerminalGuiDemo.csproj" />
+  <Project Path="tests/SelfCheck/SelfCheck.csproj" />
+</Solution>
